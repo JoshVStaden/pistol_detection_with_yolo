@@ -114,7 +114,7 @@ def main():
                 "state_dict": model.state_dict(),
                 "optimizer": optimizer.state_dict()
             }
-            save_checkpoint(checkpoint, filname=LOAD_MODEL_FILE)
+            save_checkpoint(checkpoint, filename=LOAD_MODEL_FILE)
             time.sleep(10)
             
 
