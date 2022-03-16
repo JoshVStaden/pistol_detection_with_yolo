@@ -16,7 +16,7 @@ from utils_pistol import (
     save_checkpoint,
     load_checkpoint
 )
-from loss import YoloLoss
+from loss_pistols import YoloLoss
 import time
 
 seed = 123
@@ -50,11 +50,13 @@ transform = Compose([transforms.Resize((448, 448)),transforms.ToTensor()])
 def train_fn(train_loader, model, optimizer, loss_fn):
     loop = tqdm(train_loader, leave=True)
     mean_loss = []
+    
+    hands_coords = torch.Tensor([0.5,0.5]).to(DEVICE)
 
     for batch_idx, ((x,x_pos), y) in enumerate(loop):
         x, y = (x.to(DEVICE), x_pos.to(DEVICE)), y.to(DEVICE)
         out = model(x)
-        loss = loss_fn(out, y)
+        loss = loss_fn(out, y, hands_coords)
         mean_loss.append(loss.item())
         optimizer.zero_grad()
         loss.backward()
