@@ -250,13 +250,13 @@ def get_bboxes(
     model.eval()
     train_idx = 0
 
-    for batch_idx, ((x, x_pos), labels) in enumerate(loader):
+    for batch_idx, ((x, x_hands), labels) in enumerate(loader):
         x = x.to(device)
-        x_pos = x_pos.to(device)
+        x_hands = x_hands.to(device)
         labels = labels.to(device)
-
         with torch.no_grad():
-            predictions = model((x, x_pos))
+            predictions = model((x, x_hands))
+        
 
         batch_size = x.shape[0]
         true_bboxes = cellboxes_to_boxes(labels)
@@ -284,7 +284,6 @@ def get_bboxes(
                     all_true_boxes.append([train_idx] + box)
 
             train_idx += 1
-
     model.train()
     return all_pred_boxes, all_true_boxes
 
@@ -303,6 +302,8 @@ def convert_cellboxes(predictions, S=7):
 
     predictions = predictions.to("cpu")
     batch_size = predictions.shape[0]
+    # print(predictions.size())
+    # quit()
     predictions = predictions.reshape(batch_size, 7, 7, 30)
     bboxes1 = predictions[..., 21:25]
     bboxes2 = predictions[..., 26:30]

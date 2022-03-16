@@ -4,9 +4,9 @@ import torch.optim as optim
 import torchvision.transforms.functional as FT
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from yolo import Yolov1
-from dataset import VOCDataset
-from utils import (
+from pistol_yolo import Yolov1
+from dataset_yolo import VOCDataset
+from utils_pistol import (
     intersection_over_union,
     non_max_suppression,
     mean_average_precision,
@@ -25,7 +25,7 @@ torch.manual_seed(seed)
 # Hyperparameters
 LEARNING_RATE = 2e-5
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 16
+BATCH_SIZE = 1
 WEIGHT_DECAY = 0
 EPOCHS = 100
 NUM_WORKERS = 2
@@ -40,9 +40,10 @@ class Compose(object):
         self.transforms = transforms
 
     def __call__(self, img, bboxes):
+        img, anchor = img
         for t in self.transforms:
             img, bboxes = t(img), bboxes
-        return img, bboxes
+        return (img, anchor), bboxes
 
 transform = Compose([transforms.Resize((448, 448)),transforms.ToTensor()])
 
@@ -50,8 +51,8 @@ def train_fn(train_loader, model, optimizer, loss_fn):
     loop = tqdm(train_loader, leave=True)
     mean_loss = []
 
-    for batch_idx, (x, y) in enumerate(loop):
-        x, y = x.to(DEVICE), y.to(DEVICE)
+    for batch_idx, ((x,x_pos), y) in enumerate(loop):
+        x, y = (x.to(DEVICE), x_pos.to(DEVICE)), y.to(DEVICE)
         out = model(x)
         loss = loss_fn(out, y)
         mean_loss.append(loss.item())
