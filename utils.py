@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from collections import Counter
 
+DEVICE = "gpu" if torch.cuda.is_available() else "cpu"
+
 def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
     """
     Calculates intersection over union
@@ -239,7 +241,7 @@ def get_bboxes(
     threshold,
     pred_format="cells",
     box_format="midpoint",
-    device="cuda",
+    device=DEVICE,
 ):
     all_pred_boxes = []
     all_true_boxes = []
