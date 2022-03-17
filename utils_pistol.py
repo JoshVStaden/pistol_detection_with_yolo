@@ -259,7 +259,7 @@ def get_bboxes(
         
 
         batch_size = x.shape[0]
-        true_bboxes = cellboxes_to_boxes(labels)
+        true_bboxes = cellboxes_to_boxes(labels[...,:-2])
         bboxes = cellboxes_to_boxes(predictions)
 
         for idx in range(batch_size):
@@ -299,11 +299,8 @@ def convert_cellboxes(predictions, S=7):
     using 2 for loops iterating range(S) and convert them one
     by one, resulting in a slower but more readable implementation.
     """
-
     predictions = predictions.to("cpu")
     batch_size = predictions.shape[0]
-    # print(predictions.size())
-    # quit()
     predictions = predictions.reshape(batch_size, 7, 7, 30)
     bboxes1 = predictions[..., 21:25]
     bboxes2 = predictions[..., 26:30]

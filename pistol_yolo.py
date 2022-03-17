@@ -57,12 +57,7 @@ class Yolov1(nn.Module):
     def forward(self, x):
         x, x_pos = x
         x = self.darknet(x)
-        # print(torch.flatten(x, start_dim=1).size())
-        # print(x_pos.size())
-        # quit()
         pred = self.fcs(torch.cat((torch.flatten(x, start_dim=1), x_pos), 1))
-        # print(pred.size())
-        # quit()
         return pred 
 
     def _create_conv_layers(self, architecture):

@@ -13,6 +13,7 @@ class YoloLoss(nn.Module):
         self.lambda_coord = 5
 
     def forward(self, predictions, target, hands_coords):
+        
         predictions = predictions.reshape(-1,self.S, self.S, self.C + self.B * 5)
 
         iou_b1 = intersection_over_union(predictions[...,21:25], target[..., 21:25])
@@ -85,12 +86,25 @@ class YoloLoss(nn.Module):
         # =================== #
         # HANDS LOSS
         # =================== #
-        print(bestbox.size())
-        print(hands_coords.size())
-        quit()
+        hand_box_predictions = exists_box * (
+            bestbox * predictions[..., 26:28]
+            + (1 - bestbox) * predictions[..., 21:23]
+        )
+        hand_box_targets = exists_box * target[...,30:32]
+
+        hand_box_predictions[...,2:4] = (
+            torch.sign(hand_box_predictions[...,2:4])
+            * torch.sqrt(torch.abs(hand_box_predictions[...,2:4] + 1e-6))
+        )
+
+        hand_box_targets[...,2:4] = torch.sqrt(hand_box_targets[...,2:4])
+
+
+
+        # (N, S, S, 4) -> (N * S * S, 4)
         hands_loss = self.mse(
-            torch.flatten(box_predictions[:2], end_dim=0),
-            torch.flatten(hands_coords, end_dim=0)
+            torch.flatten(hand_box_predictions, end_dim=-1),
+            torch.flatten(hand_box_targets, end_dim=-1)
         )
 
         loss = (

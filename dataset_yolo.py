@@ -44,7 +44,7 @@ class VOCDataset(torch.utils.data.Dataset):
             image, boxes = self.transform(image, boxes)
 
         # Convert To Cells
-        label_matrix = torch.zeros((self.S, self.S, self.C + 5 * self.B))
+        label_matrix = torch.zeros((self.S, self.S, self.C + 5 * self.B + 2))
         for box in boxes:
             class_label, x, y, width, height = box.tolist()
             class_label = int(class_label)
@@ -84,6 +84,7 @@ class VOCDataset(torch.utils.data.Dataset):
 
                 label_matrix[i, j, 21:25] = box_coordinates
 
+                label_matrix[i, j, 25:27] = torch.Tensor([0.5, 0.5])
                 # Set one hot encoding for class_label
                 label_matrix[i, j, class_label] = 1
 
