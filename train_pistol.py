@@ -89,7 +89,7 @@ def main():
     # )
     print("Loading Training Data")
     train_dataset = MonashDataset(
-        "monash/mini.txt",
+        "monash/train.txt",
         transform=transform,
         img_dir=IMG_DIR,
         label_dir=LABEL_DIR

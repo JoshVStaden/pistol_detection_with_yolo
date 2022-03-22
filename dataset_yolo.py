@@ -99,7 +99,7 @@ class MonashDataset(torch.utils.data.Dataset):
     def __init__(
         self, csv_file, img_dir, label_dir, S=7, B=2, C=20, transform=None,
     ):
-        self.cached_file = csv_file.split(".")[0] +"_cached.npz"
+        self.cached_file = csv_file.split(".")[0] +"_cached.pt"
         self.annotations = open(csv_file).read().split("\n")
         self.img_dir = img_dir
         self.label_dir = label_dir
@@ -109,9 +109,7 @@ class MonashDataset(torch.utils.data.Dataset):
         self.C = C
 
         if os.path.exists(self.cached_file):
-            self.cached_entries = np.load(self.cached_file, allow_pickle=True)["entries"]
-            print(self.cached_entries)
-            quit()
+            self.cached_entries = torch.load(self.cached_file)
         else:
             self.mp_pose = mp.solutions.pose
             self.cached_entries = self.load_dataset()
@@ -125,11 +123,11 @@ class MonashDataset(torch.utils.data.Dataset):
     def load_dataset(self):
         loop = tqdm(self.annotations, leave=True)
         ret = []
-        for i in range(len(loop)):
+        for i, _ in enumerate(loop):
             ret.append(self.load_item(i))
             loop.set_postfix(loaded=i, total=len(self.annotations))
         # ret = ret
-        np.savez(self.cached_file, entries=ret)
+        torch.save(ret,self.cached_file)
         return ret
 
 

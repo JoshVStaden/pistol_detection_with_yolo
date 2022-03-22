@@ -252,6 +252,8 @@ def get_bboxes(
     model.eval()
     train_idx = 0
 
+    # quit()
+
     for batch_idx, ((x, x_hands), labels) in enumerate(loader):
         x = x.to(device)
         x_hands = x_hands.to(device)
