@@ -5,7 +5,7 @@ import torchvision.transforms.functional as FT
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from pistol_yolo import Yolov1
-from dataset_yolo import VOCDataset
+from dataset_yolo import VOCDataset, MonashDataset
 from utils_pistol import (
     intersection_over_union,
     non_max_suppression,
@@ -32,8 +32,8 @@ NUM_WORKERS = 2
 PIN_MEMORY = True
 LOAD_MODEL = False
 LOAD_MODEL_FILE = "overfit.pth.tar"
-IMG_DIR = "data/images"
-LABEL_DIR = "data/labels"
+IMG_DIR = "/home/josh/Datasets/MGD/MGD2020/JPEGImages"
+LABEL_DIR = "/home/josh/Datasets/MGD/MGD2020/Annotations"
 
 class Compose(object):
     def __init__(self,transforms):
@@ -76,15 +76,21 @@ def main():
     if LOAD_MODEL:
         load_checkpoint(torch.load(LOAD_MODEL_FILE), model, optimizer)
 
-    train_dataset = VOCDataset(
-        "data/8examples.csv",
+    # train_dataset = VOCDataset(
+    #     "data/8examples.csv",
+    #     transform=transform,
+    #     img_dir=IMG_DIR,
+    #     label_dir=LABEL_DIR
+    # )
+    train_dataset = MonashDataset(
+        "monash/train.txt",
         transform=transform,
         img_dir=IMG_DIR,
         label_dir=LABEL_DIR
     )
 
     test_dataset = VOCDataset(
-        "data/test.csv",
+        "monash/test.txt",
         transform=transform,
         img_dir=IMG_DIR,
         label_dir=LABEL_DIR
