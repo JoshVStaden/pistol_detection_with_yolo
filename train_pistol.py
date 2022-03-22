@@ -5,7 +5,8 @@ import torchvision.transforms.functional as FT
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from pistol_yolo import Yolov1
-from dataset_yolo import VOCDataset
+from dataset_yolo import VOCDataset, MonashDataset
+import matplotlib.pyplot as plt
 from utils_pistol import (
     intersection_over_union,
     non_max_suppression,
@@ -25,15 +26,15 @@ torch.manual_seed(seed)
 # Hyperparameters
 LEARNING_RATE = 2e-5
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 1
+BATCH_SIZE = 32
 WEIGHT_DECAY = 0
 EPOCHS = 100
-NUM_WORKERS = 2
+NUM_WORKERS = 16
 PIN_MEMORY = True
 LOAD_MODEL = False
 LOAD_MODEL_FILE = "overfit.pth.tar"
-IMG_DIR = "data/images"
-LABEL_DIR = "data/labels"
+IMG_DIR = "/home/josh/Datasets/MGD/MGD2020/JPEGImages"
+LABEL_DIR = "/home/josh/Datasets/MGD/MGD2020/Annotations"
 
 class Compose(object):
     def __init__(self,transforms):
@@ -53,10 +54,13 @@ def train_fn(train_loader, model, optimizer, loss_fn):
     
     hands_coords = torch.Tensor([0.5,0.5]).to(DEVICE)
 
+    batch_losses = []
+
     for batch_idx, ((x,x_pos), y) in enumerate(loop):
         x, y = (x.to(DEVICE), x_pos.to(DEVICE)), y.to(DEVICE)
         out = model(x)
         loss = loss_fn(out, y, hands_coords)
+        batch_losses.append(loss)
         mean_loss.append(loss.item())
         optimizer.zero_grad()
         loss.backward()
@@ -65,6 +69,7 @@ def train_fn(train_loader, model, optimizer, loss_fn):
         loop.set_postfix(loss=loss.item())
 
     print(f"Mean loss was {sum(mean_loss) / len(mean_loss)}")
+    return batch_losses, sum(mean_loss) / len(mean_loss)
 
 def main():
     model = Yolov1(split_size=7, num_boxes=2, num_classes=20).to(DEVICE)
@@ -76,19 +81,26 @@ def main():
     if LOAD_MODEL:
         load_checkpoint(torch.load(LOAD_MODEL_FILE), model, optimizer)
 
-    train_dataset = VOCDataset(
-        "data/8examples.csv",
+    # train_dataset = VOCDataset(
+    #     "data/8examples.csv",
+    #     transform=transform,
+    #     img_dir=IMG_DIR,
+    #     label_dir=LABEL_DIR
+    # )
+    print("Loading Training Data")
+    train_dataset = MonashDataset(
+        "monash/mini.txt",
         transform=transform,
         img_dir=IMG_DIR,
         label_dir=LABEL_DIR
     )
 
-    test_dataset = VOCDataset(
-        "data/test.csv",
-        transform=transform,
-        img_dir=IMG_DIR,
-        label_dir=LABEL_DIR
-    )
+    # test_dataset = VOCDataset(
+    #     "monash/test.txt",
+    #     transform=transform,
+    #     img_dir=IMG_DIR,
+    #     label_dir=LABEL_DIR
+    # )
 
     train_loader = DataLoader(
         dataset=train_dataset,
@@ -98,14 +110,17 @@ def main():
         shuffle=True,
         drop_last=False
     )
-    test_loader = DataLoader(
-        dataset=test_dataset,
-        batch_size=BATCH_SIZE,
-        num_workers=NUM_WORKERS,
-        pin_memory=PIN_MEMORY,
-        shuffle=True,
-        drop_last=True
-    )
+    # test_loader = DataLoader(
+    #     dataset=test_dataset,
+    #     batch_size=BATCH_SIZE,
+    #     num_workers=NUM_WORKERS,
+    #     pin_memory=PIN_MEMORY,
+    #     shuffle=True,
+    #     drop_last=True
+    # )
+
+
+    batch_losses, mean_losses= [], []
 
     for epoch in range(EPOCHS):
         pred_boxes, target_boxes = get_bboxes(
@@ -123,7 +138,23 @@ def main():
 
         print(f"Train mAP: {mean_avg_prec}")
 
-        train_fn(train_loader, model, optimizer, loss_fn)
+        b_loss, m_loss = train_fn(train_loader, model, optimizer, loss_fn)
+        batch_losses.extend(b_loss)
+        mean_losses.append(m_loss)
+    plt.figure()
+    plt.plot(batch_losses)
+    plt.xlabel("Batches")
+    plt.ylabel("Loss")
+    plt.title("Batch Losses")
+    plt.savefig("batch_losses.png")
+
+    plt.figure()
+    plt.plot(mean_losses)
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.title("Mean Losses")
+    plt.savefig("mean_losses.png")
+
 
 if __name__ == "__main__":
     main()

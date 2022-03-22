@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from collections import Counter
+from tqdm import tqdm
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -243,6 +244,7 @@ def get_bboxes(
     box_format="midpoint",
     device=DEVICE,
 ):
+    # loop = tqdm(loader, leave=True)
     all_pred_boxes = []
     all_true_boxes = []
 
@@ -282,6 +284,7 @@ def get_bboxes(
                 # many will get converted to 0 pred
                 if box[1] > threshold:
                     all_true_boxes.append([train_idx] + box)
+            # loop.set_postfix(index=batch_idx, total=len(loop))
 
             train_idx += 1
     model.train()
