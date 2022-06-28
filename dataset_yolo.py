@@ -150,6 +150,7 @@ class MonashDataset(torch.utils.data.Dataset):
 
         # Get Image File
         im_file = os.path.join(self.img_dir, im_path)
+        # print(im_file)
         image = cv2.cvtColor(cv2.imread(im_file), cv2.COLOR_BGR2RGB)
         
         # im_width, im_height, _ = image.shape
@@ -273,3 +274,4 @@ class MonashDataset(torch.utils.data.Dataset):
                 label_matrix[i, j, class_label] = 1
 
         return image, label_matrix
+

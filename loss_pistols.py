@@ -102,10 +102,10 @@ class YoloLoss(nn.Module):
 
 
         # (N, S, S, 4) -> (N * S * S, 4)
-        hands_loss = self.mse(
-            torch.flatten(hand_box_predictions, end_dim=-1),
-            torch.flatten(hand_box_targets, end_dim=-1)
-        )
+        hands_loss = 0#self.mse(
+        #     torch.flatten(hand_box_predictions, end_dim=-1),
+        #     torch.flatten(hand_box_targets, end_dim=-1)
+        # )
 
         loss = (
             self.lambda_coord * box_loss

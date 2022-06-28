@@ -26,15 +26,15 @@ torch.manual_seed(seed)
 # Hyperparameters
 LEARNING_RATE = 2e-5
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 32
+BATCH_SIZE = 2
 WEIGHT_DECAY = 0
 EPOCHS = 100
-NUM_WORKERS = 16
+NUM_WORKERS = 12
 PIN_MEMORY = True
 LOAD_MODEL = False
 LOAD_MODEL_FILE = "overfit.pth.tar"
-IMG_DIR = "/home/josh/Datasets/MGD/MGD2020/JPEGImages"
-LABEL_DIR = "/home/josh/Datasets/MGD/MGD2020/Annotations"
+IMG_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
+LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 
 class Compose(object):
     def __init__(self,transforms):
@@ -81,19 +81,26 @@ def main():
     if LOAD_MODEL:
         load_checkpoint(torch.load(LOAD_MODEL_FILE), model, optimizer)
 
-    # train_dataset = VOCDataset(
-    #     "data/8examples.csv",
+    train_dataset = MonashDataset(
+        "CCTV/train.txt",
+        transform=transform,
+        img_dir=IMG_DIR + "train/",
+        label_dir=LABEL_DIR
+    )
+    
+    test_dataset = MonashDataset(
+        "CCTV/test.txt",
+        transform=transform,
+        img_dir=IMG_DIR + "test/",
+        label_dir=LABEL_DIR
+    )
+    # print("Loading Training Data")
+    # train_dataset = MonashDataset(
+    #     "monash/train.txt",
     #     transform=transform,
     #     img_dir=IMG_DIR,
     #     label_dir=LABEL_DIR
     # )
-    print("Loading Training Data")
-    train_dataset = MonashDataset(
-        "monash/train.txt",
-        transform=transform,
-        img_dir=IMG_DIR,
-        label_dir=LABEL_DIR
-    )
 
     # test_dataset = VOCDataset(
     #     "monash/test.txt",
@@ -110,15 +117,14 @@ def main():
         shuffle=True,
         drop_last=False
     )
-    # test_loader = DataLoader(
-    #     dataset=test_dataset,
-    #     batch_size=BATCH_SIZE,
-    #     num_workers=NUM_WORKERS,
-    #     pin_memory=PIN_MEMORY,
-    #     shuffle=True,
-    #     drop_last=True
-    # )
-
+    test_loader = DataLoader(
+        dataset=test_dataset,
+        batch_size=BATCH_SIZE,
+        num_workers=NUM_WORKERS,
+        pin_memory=PIN_MEMORY,
+        shuffle=True,
+        drop_last=True
+    )
 
     batch_losses, mean_losses= [], []
 
