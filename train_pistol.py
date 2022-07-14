@@ -26,10 +26,10 @@ torch.manual_seed(seed)
 # Hyperparameters
 LEARNING_RATE = 2e-5
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 2
+BATCH_SIZE = 1
 WEIGHT_DECAY = 0
 EPOCHS = 100
-NUM_WORKERS = 12
+NUM_WORKERS = 6
 PIN_MEMORY = True
 LOAD_MODEL = False
 LOAD_MODEL_FILE = "overfit.pth.tar"
@@ -72,7 +72,7 @@ def train_fn(train_loader, model, optimizer, loss_fn):
     return batch_losses, sum(mean_loss) / len(mean_loss)
 
 def main():
-    model = Yolov1(split_size=7, num_boxes=2, num_classes=20).to(DEVICE)
+    model = Yolov1(split_size=1, num_boxes=1, num_classes=1).to(DEVICE)
     optimizer = optim.Adam(
         model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
     )
@@ -82,7 +82,7 @@ def main():
         load_checkpoint(torch.load(LOAD_MODEL_FILE), model, optimizer)
 
     train_dataset = MonashDataset(
-        "CCTV/train.txt",
+        "CCTV/train_copy.txt",
         transform=transform,
         img_dir=IMG_DIR + "train/",
         label_dir=LABEL_DIR
@@ -94,21 +94,6 @@ def main():
         img_dir=IMG_DIR + "test/",
         label_dir=LABEL_DIR
     )
-    # print("Loading Training Data")
-    # train_dataset = MonashDataset(
-    #     "monash/train.txt",
-    #     transform=transform,
-    #     img_dir=IMG_DIR,
-    #     label_dir=LABEL_DIR
-    # )
-
-    # test_dataset = VOCDataset(
-    #     "monash/test.txt",
-    #     transform=transform,
-    #     img_dir=IMG_DIR,
-    #     label_dir=LABEL_DIR
-    # )
-
     train_loader = DataLoader(
         dataset=train_dataset,
         batch_size=BATCH_SIZE,
@@ -132,6 +117,8 @@ def main():
         pred_boxes, target_boxes = get_bboxes(
             train_loader, model, iou_threshold=0.5, threshold=0.4
         )
+        # print(pred_boxes.size(), target_boxes.size())
+        # quit()
         mean_avg_prec = mean_average_precision(pred_boxes, target_boxes, iou_threshold=0.5, box_format="midpoint")
         if mean_avg_prec > 0.9:
             checkpoint = {

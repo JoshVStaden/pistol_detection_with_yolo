@@ -97,7 +97,7 @@ class VOCDataset(torch.utils.data.Dataset):
 
 class MonashDataset(torch.utils.data.Dataset):
     def __init__(
-        self, csv_file, img_dir, label_dir, S=7, B=2, C=20, transform=None,
+        self, csv_file, img_dir, label_dir, S=1, B=1, C=1, transform=None, max_samples = 1500
     ):
         self.cached_file = csv_file.split(".")[0] +"_cached.pt"
         self.annotations = open(csv_file).read().split("\n")
@@ -107,15 +107,17 @@ class MonashDataset(torch.utils.data.Dataset):
         self.S = S
         self.B = B
         self.C = C
+        self.max_samples = max_samples
 
         if os.path.exists(self.cached_file):
             self.cached_entries = torch.load(self.cached_file)
         else:
             self.mp_pose = mp.solutions.pose
             self.cached_entries = self.load_dataset()
-        
+        # print(len(self.cached_entries))
+        # quit()
     def __len__(self):
-        return len(self.annotations)
+        return len(self.cached_entries)
 
     def __getitem__(self, index):
         return self.cached_entries[index]
@@ -124,6 +126,8 @@ class MonashDataset(torch.utils.data.Dataset):
         loop = tqdm(self.annotations, leave=True)
         ret = []
         for i, _ in enumerate(loop):
+            if i == self.max_samples: 
+                break
             ret.append(self.load_item(i))
             loop.set_postfix(loaded=i, total=len(self.annotations))
         # ret = ret
@@ -182,6 +186,7 @@ class MonashDataset(torch.utils.data.Dataset):
         objects = label_root.iter("object")
 
         hand_arr = None
+        hand_ind = 0
 
         for obj in objects:
             # [xmin, xmax, ymin, ymax]
@@ -212,6 +217,7 @@ class MonashDataset(torch.utils.data.Dataset):
                 hand_arr = [left_x, left_y]
 
             elif xmin < right_x < xmax and ymin < right_y < ymax:
+                hand_ind = 1
                 hand_arr = [right_x, right_y]
 
             else:
@@ -225,11 +231,10 @@ class MonashDataset(torch.utils.data.Dataset):
         image = (image, hand_arr)
 
         if self.transform:
-            # image = self.transform(image)
             image, boxes = self.transform(image, boxes)
 
         # Convert To Cells
-        label_matrix = torch.zeros((self.S, self.S, self.C + 5 * self.B + 2))
+        label_matrix = torch.zeros((self.S, self.S, 2, self.C + self.B * 3))
         for box in boxes:
             class_label, x, y, width, height = box.tolist()
             class_label = int(class_label)
@@ -258,20 +263,20 @@ class MonashDataset(torch.utils.data.Dataset):
             # If no object already found for specific cell i,j
             # Note: This means we restrict to ONE object
             # per cell!
-            if label_matrix[i, j, 20] == 0:
+
+            if label_matrix[i, j, hand_ind, self.C] == 0:
                 # Set that there exists an object
-                label_matrix[i, j, 20] = 1
+                label_matrix[i, j, hand_ind, self.C] = 1
 
                 # Box coordinates
                 box_coordinates = torch.tensor(
-                    [x_cell, y_cell, width_cell, height_cell]
+                    [width_cell, height_cell]
                 )
 
-                label_matrix[i, j, 21:25] = box_coordinates
+                label_matrix[i, j, hand_ind, self.C + 1:self.C + 3] = box_coordinates
 
-                label_matrix[i, j, 25:27] = hand_arr
                 # Set one hot encoding for class_label
-                label_matrix[i, j, class_label] = 1
+                label_matrix[i, j,hand_ind, class_label] = 1
 
         return image, label_matrix
 
