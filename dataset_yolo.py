@@ -192,14 +192,16 @@ class MonashDataset(torch.utils.data.Dataset):
             # [xmin, xmax, ymin, ymax]
             curr_data = [-1, -1, -1, -1]
             for child in obj:
-                if child.tag == 'xmin':
-                    curr_data[0] = int(child.text)
-                elif child.tag == 'xmax':
-                    curr_data[1] = int(child.text)
-                elif child.tag == 'ymin':
-                    curr_data[2] = int(child.text)
-                elif child.tag == 'ymax':
-                    curr_data[3] = int(child.text)
+                if child.tag == "bndbox":
+                    for bndbox_child in child:
+                        if bndbox_child.tag == 'xmin':
+                            curr_data[0] = int(bndbox_child.text)
+                        elif bndbox_child.tag == 'xmax':
+                            curr_data[1] = int(bndbox_child.text)
+                        elif bndbox_child.tag == 'ymin':
+                            curr_data[2] = int(bndbox_child.text)
+                        elif bndbox_child.tag == 'ymax':
+                            curr_data[3] = int(bndbox_child.text)
             xmin, xmax,ymin, ymax = curr_data
 
             x = ((xmin + xmax) / 2) / im_width
@@ -227,6 +229,8 @@ class MonashDataset(torch.utils.data.Dataset):
         
         boxes = torch.tensor(boxes)
         hand_arr = torch.Tensor(hand_arr)
+        # print(hand_arr)
+        # quit()
 
         image = (image, hand_arr)
 
@@ -277,6 +281,7 @@ class MonashDataset(torch.utils.data.Dataset):
 
                 # Set one hot encoding for class_label
                 label_matrix[i, j,hand_ind, class_label] = 1
-
+        # print(label_matrix)
+        # quit()
         return image, label_matrix
 

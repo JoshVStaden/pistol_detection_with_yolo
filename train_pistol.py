@@ -82,14 +82,14 @@ def main():
         load_checkpoint(torch.load(LOAD_MODEL_FILE), model, optimizer)
 
     train_dataset = MonashDataset(
-        "CCTV/train_copy.txt",
+        "CCTV/train_mini.txt",
         transform=transform,
         img_dir=IMG_DIR + "train/",
         label_dir=LABEL_DIR
     )
     
     test_dataset = MonashDataset(
-        "CCTV/test.txt",
+        "CCTV/test_mini.txt",
         transform=transform,
         img_dir=IMG_DIR + "test/",
         label_dir=LABEL_DIR

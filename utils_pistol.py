@@ -274,7 +274,6 @@ def get_bboxes(
         labels = labels.to(device)
         with torch.no_grad():
             predictions = model((x, x_hands))
-        
 
         batch_size = x.shape[0]
         # print(labels.size())
