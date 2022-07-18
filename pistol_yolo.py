@@ -5,6 +5,10 @@ with slight modification with added BatchNorm.
 
 import torch
 import torch.nn as nn
+import matplotlib.pyplot as plt
+from torchvision.transforms.functional import affine
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 """ 
 Information about architecture config:
@@ -54,10 +58,58 @@ class Yolov1(nn.Module):
         self.darknet = self._create_conv_layers(self.architecture)
         self.fcs = self._create_fcs(**kwargs)
 
+    def _center_image(self, image, center):
+        batch_size = image.size()[0]
+
+        img_shape_0 = image.size()[-2]
+        img_shape_1 = image.size()[-1]
+
+        img_center_0 = img_shape_0 // 2
+        img_center_1 = img_shape_1 // 2
+
+        x_shift = torch.sub(img_center_1, center[...,1], alpha=img_shape_1).type(torch.long)
+        y_shift = torch.sub(img_center_0, center[...,0], alpha=img_shape_0).type(torch.long)
+
+        return affine(image, 0, [-x_shift, -y_shift], 1, 0)
+        
+
+        # inds_x = torch.arange(img_shape_1, dtype=torch.long).to(DEVICE).repeat((batch_size, image.size()[1], 1))
+        # inds_y = torch.arange(img_shape_0, dtype=torch.long).to(DEVICE).repeat((batch_size, image.size()[1], 1))
+
+        # inds_x = torch.sub(inds_x, x_shift)
+        # inds_y = torch.sub(inds_y, y_shift)
+
+        # inds_x = torch.remainder(inds_x, img_shape_1)
+        # inds_y = torch.remainder(inds_x, img_shape_0)
+
+        # img_clone = torch.clone(image)
+
+
+
+ 
+        # img_clone[] = image[inds_x]
+        # return img_clone
+
+
+
+
     def forward(self, x):
         x, x_pos = x
-        x = self.darknet(x)
-        pred = self.fcs(torch.cat((torch.flatten(x, start_dim=1), x_pos), 1)) 
+        # print(x_pos.size())
+        x = self._center_image(x, x_pos)
+        # plt.figure()
+        # plt.imshow(x[0,...].cpu()[0,:,:])
+        # plt.savefig("transformed.png")
+        # plt.close()
+        # quit()
+        x1 = self.darknet(x)
+        pred1 = self.fcs(torch.flatten(x1, start_dim=1)) 
+
+        
+        x2 = self.darknet(x)
+        pred2 = self.fcs(torch.flatten(x2, start_dim=1)) 
+
+        pred = torch.cat((pred1, pred2), axis=1)
         return pred 
 
     def _create_conv_layers(self, architecture):
@@ -114,8 +166,8 @@ class Yolov1(nn.Module):
 
         return nn.Sequential(
             nn.Flatten(),
-            nn.Linear(50178, 496),
+            nn.Linear(50176, 496),
             nn.Dropout(0.0),
             nn.LeakyReLU(0.1),
-            nn.Linear(496, 2 * (C + B * 3)),
+            nn.Linear(496, (C + B * 3)),
         )
