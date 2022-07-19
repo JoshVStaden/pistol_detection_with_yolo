@@ -108,28 +108,43 @@ def mouse_handler(event, x, y, flags, data):
     data, img = data
     left_hand_coords = data["left"]
     right_hand_coords = data["right"]
-    if event == cv2.EVENT_LBUTTONDOWN and not lbtn_down:
+    if event == cv2.EVENT_LBUTTONDOWN:
         # You have just clicked on a button
         lbtn_down = True
-        if len(left_hand_coords) > 0:
-            left_hand_coords = []
+        if len(left_hand_coords) == 4:
+            left_hand_coords.clear()
         left_hand_coords.append(x)
         left_hand_coords.append(y)
-    elif event == cv2.EVENT_MOUSEMOVE and lbtn_down:
-        found_gun = True
-        # m_img = cv2.rectangle(img, (left_hand_coords[0], left_hand_coords[1]), (x, y), (255, 0, 0), 10)
-    elif event == cv2.EVENT_LBUTTONUP and found_gun:
-        found_gun = False
-        lbtn_down = False
-        left_hand_coords.append(x)
-        left_hand_coords.append(y)
-    elif event == cv2.EVENT_MBUTTONDOWN and not rbtn_down:
+
+        if len(left_hand_coords) == 4:
+            
+            left_hand_coords[0], left_hand_coords[2] = min(left_hand_coords[0], left_hand_coords[2]), max(left_hand_coords[0], left_hand_coords[2])
+            left_hand_coords[1], left_hand_coords[3] = min(left_hand_coords[1], left_hand_coords[3]), max(left_hand_coords[1], left_hand_coords[3])
+            mod_img = cv2.rectangle(img, (left_hand_coords[0], left_hand_coords[1]), (left_hand_coords[2], left_hand_coords[3]), (255, 0, 0), 1)
+            cv2.imshow("Modified Image", mod_img)
+
+    # elif event == cv2.EVENT_MOUSEMOVE and lbtn_down:
+    #     found_gun = True
+    #     # m_img = cv2.rectangle(img, (left_hand_coords[0], left_hand_coords[1]), (x, y), (255, 0, 0), 10)
+    # elif event == cv2.EVENT_LBUTTONUP and found_gun:
+    #     found_gun = False
+    #     lbtn_down = False
+    #     left_hand_coords.append(x)
+    #     left_hand_coords.append(y)
+    #     mod_img = cv2.rectangle(img, (left_hand_coords[0], left_hand_coords[1]), (left_hand_coords[2], left_hand_coords[3]), (255, 0, 0), 1)
+    #     cv2.imshow("Modified Image", mod_img)
+    elif event == cv2.EVENT_MBUTTONDOWN:
         # You have just clicked on a button
-        rbtn_down = True
-        if len(right_hand_coords) > 0:
-            right_hand_coords = []
+        if len(right_hand_coords) == 4:
+            right_hand_coords.clear()
         right_hand_coords.append(x)
         right_hand_coords.append(y)
+
+        if len(right_hand_coords) == 4:
+            right_hand_coords[0], right_hand_coords[2] = min(right_hand_coords[0], right_hand_coords[2]), max(right_hand_coords[0], right_hand_coords[2])
+            right_hand_coords[1], right_hand_coords[3] = min(right_hand_coords[1], right_hand_coords[3]), max(right_hand_coords[1], right_hand_coords[3])        
+            mod_img = cv2.rectangle(img, (right_hand_coords[0], right_hand_coords[1]), (right_hand_coords[2], right_hand_coords[3]), (0, 255, 0), 1)
+            cv2.imshow("Modified Image", mod_img)
     elif event == cv2.EVENT_MOUSEMOVE and rbtn_down:
         found_gun = True
     elif event == cv2.EVENT_MBUTTONUP and found_gun:
@@ -137,6 +152,9 @@ def mouse_handler(event, x, y, flags, data):
         rbtn_down = False
         right_hand_coords.append(x)
         right_hand_coords.append(y)
+        
+        mod_img = cv2.rectangle(img, (right_hand_coords[0], right_hand_coords[1]), (right_hand_coords[2], right_hand_coords[3]), (0, 255, 0), 1)
+        cv2.imshow("Modified Image", mod_img)
 
 
 image_file_locations = []
@@ -166,9 +184,11 @@ for im, la in zip(image_file_locations, label_file_locations):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     print(hand_coords)
-    write_to_xml(la, im, img.shape, hand_coords)
-    files.pop(0)
+    curr_entry = files.pop(0)
+    if len(hand_coords["left"]) > 0 or len(hand_coords["right"]) > 0:
+        write_to_xml(la, im, img.shape, hand_coords)
+        with open(ds_file + "_modified.txt" , 'a') as f:
+            f.write(curr_entry)
     with open(ds_file, 'w') as f:
         f.write("".join(files))
-    quit()
 

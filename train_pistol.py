@@ -20,8 +20,8 @@ from utils_pistol import (
 from loss_pistols import YoloLoss
 import time
 
-seed = 123
-torch.manual_seed(seed)
+# seed = 123
+# torch.manual_seed(seed)
 
 # Hyperparameters
 LEARNING_RATE = 2e-5
