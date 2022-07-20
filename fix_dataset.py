@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 IMG_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 OUTPUT_LABEL_DIR = LABEL_DIR + "modified/"
-ds_file = "CCTV/test_mini.txt"
+ds_file = "CCTV/test_copy.txt"
 
 def write_to_xml(xml_filename, filename, img_size, data):
     width, height, _ = img_size
@@ -182,7 +182,6 @@ for im, la in zip(image_file_locations, label_file_locations):
     cv2.imshow("Modified Image", img)
     cv2.setMouseCallback("Modified Image", mouse_handler, (hand_coords, img))
     cv2.waitKey(0)
-    cv2.destroyAllWindows()
     print(hand_coords)
     curr_entry = files.pop(0)
     if len(hand_coords["left"]) > 0 or len(hand_coords["right"]) > 0:
@@ -191,4 +190,6 @@ for im, la in zip(image_file_locations, label_file_locations):
             f.write(curr_entry)
     with open(ds_file, 'w') as f:
         f.write("".join(files))
+print("Done!")
+cv2.destroyAllWindows()
 
