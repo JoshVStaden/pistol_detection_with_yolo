@@ -5,7 +5,7 @@ import torchvision.transforms.functional as FT
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from pistol_yolo import Yolov1
-from dataset_yolo import VOCDataset, MonashDataset
+from dataset_yolo import PistolDataset
 import matplotlib.pyplot as plt
 from utils_pistol import (
     intersection_over_union,
@@ -34,7 +34,7 @@ PIN_MEMORY = True
 LOAD_MODEL = False
 LOAD_MODEL_FILE = "overfit.pth.tar"
 IMG_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
-LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
+LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/modified/"
 
 class Compose(object):
     def __init__(self,transforms):
@@ -81,15 +81,15 @@ def main():
     if LOAD_MODEL:
         load_checkpoint(torch.load(LOAD_MODEL_FILE), model, optimizer)
 
-    train_dataset = MonashDataset(
-        "CCTV/train_mini.txt",
+    train_dataset = PistolDataset(
+        "CCTV/train_copy.txt",
         transform=transform,
         img_dir=IMG_DIR + "train/",
         label_dir=LABEL_DIR
     )
     
-    test_dataset = MonashDataset(
-        "CCTV/test_mini.txt",
+    test_dataset = PistolDataset(
+        "CCTV/test_copy.txt",
         transform=transform,
         img_dir=IMG_DIR + "test/",
         label_dir=LABEL_DIR
