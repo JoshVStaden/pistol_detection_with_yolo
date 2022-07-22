@@ -16,7 +16,7 @@ class YoloLoss(nn.Module):
         self.lambda_noobj = 0.5
         self.lambda_coord = 5
 
-    def forward(self, predictions, target, hands_coords):
+    def forward(self, predictions, target):
         """
         Defaults:
             C = 1
@@ -152,6 +152,14 @@ class YoloLoss(nn.Module):
             + class_loss
             # + hands_loss
         )
+        
+        losses = (
+            self.lambda_coord * box_loss,
+            object_loss,
+            self.lambda_noobj * no_object_loss,
+            class_loss,
+            # + hands_loss
+        )
 
-        return loss
+        return loss, losses
 

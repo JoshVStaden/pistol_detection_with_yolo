@@ -3,3 +3,4 @@ __pycache__/
 *.tar
 */*.npz
 */*.pt
+*.png

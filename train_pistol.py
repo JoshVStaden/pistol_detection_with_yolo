@@ -1,3 +1,4 @@
+from dis import dis
 import torch
 import torchvision.transforms as transforms
 import torch.optim as optim
@@ -48,25 +49,52 @@ class Compose(object):
 
 transform = Compose([transforms.Resize((448, 448)),transforms.ToTensor()])
 
+def show_losses(losses, filename="losses.png"):
+    plt.figure()
+    box = []
+    obj = []
+    noobj = []
+    classes = []
+    for l in losses:
+        b, o, n, c = l
+        box.append(b.item())
+        obj.append(o.item())
+        noobj.append(n.item())
+        classes.append(c.item())
+    plt.plot(box, label="Box Loss")
+    plt.plot(obj, label="Object Loss")
+    plt.plot(noobj, label="Noobj Loss")
+    plt.plot(classes, label="Class Loss")
+    plt.legend(loc="best")
+    plt.savefig(filename)
+    plt.close()
+
+
+
 def train_fn(train_loader, model, optimizer, loss_fn):
     loop = tqdm(train_loader, leave=True)
     mean_loss = []
     
-    hands_coords = torch.Tensor([0.5,0.5]).to(DEVICE)
-
     batch_losses = []
+    displ = []
 
     for batch_idx, ((x,x_pos), y) in enumerate(loop):
         x, y = (x.to(DEVICE), x_pos.to(DEVICE)), y.to(DEVICE)
         out = model(x)
-        loss = loss_fn(out, y, hands_coords)
+        loss, losses = loss_fn(out, y)
         batch_losses.append(loss)
         mean_loss.append(loss.item())
+        displ.append(losses)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        loop.set_postfix(loss=loss.item())
+        b, o, n, c = losses
+
+        if batch_idx % 20 == 1:
+            show_losses(displ)
+
+        loop.set_postfix(loss=loss.item(), box=b.item(), obj=o.item(), noobj=n.item(), class_loss=c.item())
 
     print(f"Mean loss was {sum(mean_loss) / len(mean_loss)}")
     return batch_losses, sum(mean_loss) / len(mean_loss)
