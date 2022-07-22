@@ -3,6 +3,9 @@ import torch.nn as nn
 from utils import intersection_over_union
 from utils_pistol import width_height
 
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
 class YoloLoss(nn.Module):
     def __init__(self, S=1, B=1, C=1):
         super(YoloLoss, self).__init__()
@@ -32,11 +35,25 @@ class YoloLoss(nn.Module):
         """
         
         predictions = predictions.reshape(-1,self.S, self.S, 2, self.C + self.B * 3)
-        inds = target[...,self.C] == 1
 
-        ious = width_height(predictions[inds][...,self.C + 1:self.C + 3], target[inds][..., self.C + 1:self.C + 3])
-        
-        # ious = torch.cat((ious, width_height(predictions[1,...,self.C + 1:self.C + 3], target[..., self.C + 2:self.C + 4])))
+        # print(target.size())
+        # quit()
+        ltarget = target[..., :1, :]
+        rtarget = target[...,1:, :]
+
+        linds = (ltarget[...,self.C] == 1)[:, 0, 0, 0]
+        if (linds).any():
+            lious = width_height(predictions[linds, ...][...,:1, self.C + 1:self.C + 3], ltarget[linds, ...][..., self.C + 1:self.C + 3])
+        else:
+            lious = torch.ones((1,1,1,1), device=DEVICE)
+
+        rinds = (rtarget[...,self.C] == 1)[:, 0, 0, 0]
+        if (rinds).any():
+            rious = width_height(predictions[rinds, ...][...,1:, self.C + 1:self.C + 3], rtarget[rinds, ...][..., self.C + 1:self.C + 3])
+        else:
+            rious = torch.ones((1,1,1,1), device=DEVICE)
+
+        ious = torch.cat((lious, rious))
 
         # iou_b2 = width_height(predictions[...,26:30], target[..., 21:25])
         # ious = torch.cat([iou_b1.unsqueeze(0), iou_b2.unsqueeze(0)], dim=0)

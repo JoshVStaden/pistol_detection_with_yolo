@@ -109,7 +109,7 @@ def non_max_suppression(bboxes, iou_threshold, threshold, box_format="corners"):
 
 
 def mean_average_precision(
-    pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint", num_classes=20
+    pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint", num_classes=1
 ):
     """
     Calculates mean average precision 
@@ -131,6 +131,7 @@ def mean_average_precision(
 
     # used for numerical stability later on
     epsilon = 1e-6
+
 
     for c in range(num_classes):
         detections = []
@@ -214,7 +215,7 @@ def mean_average_precision(
         # torch.trapz for numerical integration
         average_precisions.append(torch.trapz(precisions, recalls))
     # quit()
-    return sum(average_precisions) / len(average_precisions)
+    return sum(average_precisions) / len(average_precisions) if len(average_precisions) > 0  else 1
 
 
 def plot_image(image, boxes):

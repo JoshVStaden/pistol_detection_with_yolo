@@ -89,22 +89,45 @@ class PistolDataset(torch.utils.data.Dataset):
 
 
         for obj in objects:
-            # [xmin, xmax, ymin, ymax]
+            # [xmin, xmax, ymin, ymax]]
             curr_data = [0, 0, 0, 0]
             for child in obj:
                 if child.tag == "rbbox":
+                    x_data = []
+                    y_data = []
                     for bndbox_child in child:
-                        if bndbox_child.tag == 'x':
-                            curr_data[2] = int(bndbox_child.text)/ im_width
-                        elif bndbox_child.tag == 'y':
-                            curr_data[3] = int(bndbox_child.text)/ im_height
+                        if bndbox_child.tag == "xmin":
+                            x_data.append(int(bndbox_child.text)/ im_width)
+                        elif bndbox_child.tag == "xmax":
+                            x_data.append(int(bndbox_child.text)/ im_width)
+                        elif bndbox_child.tag == "ymax":
+                            y_data.append(int(bndbox_child.text)/ im_height)
+                        elif bndbox_child.tag == "ymin":
+                            y_data.append(int(bndbox_child.text)/ im_height)
+
+                        if len(x_data) == 2:
+                            curr_data[2] = max(x_data) - min(x_data)
+                        elif len(y_data) == 2:
+                            curr_data[3] = max(y_data) - min(y_data)
                 
                 if child.tag == "lbbox":
+                    x_data = []
+                    y_data = []
                     for bndbox_child in child:
-                        if bndbox_child.tag == 'x':
-                            curr_data[0] = int(bndbox_child.text)/ im_width
-                        elif bndbox_child.tag == 'y':
-                            curr_data[1] = int(bndbox_child.text)/ im_height
+                        if bndbox_child.tag == "xmin":
+                            x_data.append(int(bndbox_child.text)/ im_width)
+                        elif bndbox_child.tag == "xmax":
+                            x_data.append(int(bndbox_child.text)/ im_width)
+                        elif bndbox_child.tag == "ymax":
+                            y_data.append(int(bndbox_child.text)/ im_height)
+                        elif bndbox_child.tag == "ymin":
+                            y_data.append(int(bndbox_child.text)/ im_height)
+
+                        if len(x_data) == 2:
+                            curr_data[0] = max(x_data) - min(x_data)
+                        elif len(y_data) == 2:
+                            curr_data[1] = max(y_data) - min(y_data)
+                
                 if child.tag == "lhand":
                     for l in child:
                         if l.tag == 'x':
@@ -120,8 +143,8 @@ class PistolDataset(torch.utils.data.Dataset):
                             rhand_arr[1] = int(r.text)/ im_height
             # has_lhand = lhand_arr == [0, 0]
             # has_rhand = rhand_arr == [0, 0]
+            hand_arr = [lhand_arr] + [rhand_arr]
 
-            hand_arr.append(lhand_arr + rhand_arr)
 
             # if has_lhand and has_rhand:
             #     hand_arr = (lhand_arr, rhand_arr)
@@ -133,8 +156,6 @@ class PistolDataset(torch.utils.data.Dataset):
         
         boxes = torch.tensor(boxes)
         hand_arr = torch.Tensor(hand_arr)
-        # print(hand_arr)
-        # quit()
 
         image = (image, hand_arr)
 
@@ -177,25 +198,23 @@ class PistolDataset(torch.utils.data.Dataset):
             # per cell!
 
             for i in range(2):
-                hand_ind = i * 2
-                if box[hand_ind] == 0:
+                hand_ind = i * 2 
+                if box[hand_ind + 1] == 0 and box[hand_ind + 2] == 0:
                     continue
-                if label_matrix[0, 0, hand_ind, self.C] == 0:
+                if label_matrix[0, 0, i, self.C] == 0:
                     # Set that there exists an object
-                    label_matrix[0, 0, hand_ind, self.C] = 1
+                    label_matrix[0, 0, i, self.C] = 1
 
-                    width_cell, height_cell = cell_sizes[hand_ind]
+                    width_cell, height_cell = cell_sizes[i]
 
                     # Box coordinates
                     box_coordinates = torch.tensor(
                         [width_cell, height_cell]
                     )
 
-                    label_matrix[0, 0, hand_ind, self.C + 1:self.C + 3] = box_coordinates
+                    label_matrix[0, 0, i, self.C + 1:self.C + 3] = box_coordinates
 
                     # Set one hot encoding for class_label
-                    label_matrix[0, 0,hand_ind, class_label] = 1
-        # print(label_matrix)
-        # quit()
+                    label_matrix[0, 0,i, class_label] = 1
         return image, label_matrix
 

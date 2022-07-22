@@ -3,10 +3,12 @@ Implementation of Yolo (v1) architecture
 with slight modification with added BatchNorm.
 """
 
+from operator import mod
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 from torchvision.transforms.functional import affine
+from zmq import device
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -69,8 +71,16 @@ class Yolov1(nn.Module):
 
         x_shift = torch.sub(img_center_1, center[...,1], alpha=img_shape_1).type(torch.long)
         y_shift = torch.sub(img_center_0, center[...,0], alpha=img_shape_0).type(torch.long)
+        
+        mod_im = torch.zeros(image.size(), device= DEVICE)
+        for b in range(batch_size):
+            mod_im[b, ...] = affine(
+                image[b,...], 0,
+                [-x_shift[b], -y_shift[b]], 1, 0
+            )
 
-        return affine(image, 0, [-x_shift, -y_shift], 1, 0)
+
+        return mod_im
         
 
         # inds_x = torch.arange(img_shape_1, dtype=torch.long).to(DEVICE).repeat((batch_size, image.size()[1], 1))
@@ -96,17 +106,19 @@ class Yolov1(nn.Module):
     def forward(self, x):
         x, x_pos = x
         # print(x_pos.size())
-        x = self._center_image(x, x_pos)
+        l_pos, r_pos = x_pos[...,0,:], x_pos[...,1,:]
+        l = self._center_image(x, l_pos)
+        r = self._center_image(x, r_pos)
         # plt.figure()
         # plt.imshow(x[0,...].cpu()[0,:,:])
         # plt.savefig("transformed.png")
         # plt.close()
         # quit()
-        x1 = self.darknet(x)
+        x1 = self.darknet(l)
         pred1 = self.fcs(torch.flatten(x1, start_dim=1)) 
 
         
-        x2 = self.darknet(x)
+        x2 = self.darknet(r)
         pred2 = self.fcs(torch.flatten(x2, start_dim=1)) 
 
         pred = torch.cat((pred1, pred2), axis=1)
