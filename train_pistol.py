@@ -25,7 +25,7 @@ import time
 # torch.manual_seed(seed)
 
 # Hyperparameters
-LEARNING_RATE = 2e-5
+LEARNING_RATE = 1e-6
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 4
 WEIGHT_DECAY = 0
@@ -52,18 +52,14 @@ transform = Compose([transforms.Resize((448, 448)),transforms.ToTensor()])
 def show_losses(losses, filename="losses.png"):
     plt.figure()
     box = []
-    obj = []
-    noobj = []
     classes = []
     for l in losses[-200:]:
-        b, o, n, c = l
+        b, c = l
         box.append(b.item())
         # obj.append(o.item())
         # noobj.append(n.item())
         classes.append(c.item())
     plt.plot(box, label="Box Loss")
-    plt.plot(obj, label="Object Loss")
-    plt.plot(noobj, label="Noobj Loss")
     plt.plot(classes, label="Class Loss")
     plt.legend(loc="best")
     plt.savefig(filename)
@@ -82,19 +78,19 @@ def train_fn(train_loader, model, optimizer, loss_fn):
         x, y = (x.to(DEVICE), x_pos.to(DEVICE)), y.to(DEVICE)
         out = model(x)
         loss, losses = loss_fn(out, y)
-        batch_losses.append(loss)
+        batch_losses.append(loss.item())
         mean_loss.append(loss.item())
         displ.append(losses)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        b, o, n, c = losses
+        b,  c = losses
 
         if batch_idx % 20 == 1:
             show_losses(displ)
 
-        loop.set_postfix(loss=loss.item(), box=b.item(), obj=o.item(), noobj=n.item(), class_loss=c.item())
+        loop.set_postfix(loss=loss.item(), box=b.item(), class_loss=c.item())
 
     print(f"Mean loss was {sum(mean_loss) / len(mean_loss)}")
     return batch_losses, sum(mean_loss) / len(mean_loss)
@@ -160,19 +156,23 @@ def main():
         b_loss, m_loss = train_fn(train_loader, model, optimizer, loss_fn)
         batch_losses.extend(b_loss)
         mean_losses.append(m_loss)
-    plt.figure()
-    plt.plot(batch_losses)
-    plt.xlabel("Batches")
-    plt.ylabel("Loss")
-    plt.title("Batch Losses")
-    plt.savefig("batch_losses.png")
 
-    plt.figure()
-    plt.plot(mean_losses)
-    plt.xlabel("Epochs")
-    plt.ylabel("Loss")
-    plt.title("Mean Losses")
-    plt.savefig("mean_losses.png")
+        if (epoch + 1) % 5 == 0:
+            plt.figure()
+            plt.plot(batch_losses)
+            plt.xlabel("Batches")
+            plt.ylabel("Loss")
+            plt.title("Batch Losses")
+            plt.savefig("batch_losses.png")
+            plt.close()
+
+            plt.figure()
+            plt.plot(mean_losses)
+            plt.xlabel("Epochs")
+            plt.ylabel("Loss")
+            plt.title("Mean Losses")
+            plt.savefig("mean_losses.png")
+            plt.close()
 
 
 if __name__ == "__main__":

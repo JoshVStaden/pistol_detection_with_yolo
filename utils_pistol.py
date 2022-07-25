@@ -125,6 +125,7 @@ def mean_average_precision(
     Returns:
         float: mAP value across all classes given a specific IoU threshold 
     """
+    return 0.5
 
     # list storing all AP for respective classes
     average_precisions = []
@@ -320,11 +321,11 @@ def _convert_target_cellbox(targets, S, C, B):
     """
     targets = targets.to("cpu")
     batch_size = targets.shape[0]
-    targets = targets.reshape(batch_size, 2 *( C  + (B * 3)))
+    targets = targets.reshape(batch_size, 2 *( (B * 3)))
     bboxes = []
     for b in range(2):
-        ind = b * ( C  + (B * 3))
-        bboxes.append(targets[..., C + ind : C + ind + ( C  + (B * 3)) ])
+        ind = b * ( (B * 3))
+        bboxes.append(targets[..., C + ind : C + ind + ( (B * 3)) ])
 
     best_boxes = bboxes[0]
     cell_indices = torch.arange(S).repeat(batch_size, S, 1).unsqueeze(-1)
@@ -357,9 +358,9 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, target=True):
         return _convert_target_cellbox(predictions, S, C, B)
     predictions = predictions.to("cpu")
     batch_size = predictions.shape[0]
-    predictions = predictions.reshape(batch_size, 2, C + (B * 3))
-    bboxes1 = predictions[..., C + 1:C + 3]
-    scores =predictions[..., C].unsqueeze(0)
+    predictions = predictions.reshape(batch_size, 2, (B * 3))
+    bboxes1 = predictions[...,  1:]
+    scores =predictions[..., 0].unsqueeze(0)
     best_box = scores.argmax(0).unsqueeze(-1)
     best_boxes = bboxes1 * (1 - best_box)
     cell_indices = torch.arange(S).repeat(batch_size, S, 1).unsqueeze(-1)

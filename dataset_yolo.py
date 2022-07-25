@@ -163,7 +163,7 @@ class PistolDataset(torch.utils.data.Dataset):
             image, boxes = self.transform(image, boxes)
 
         # Convert To Cells
-        label_matrix = torch.zeros((self.S, self.S, 2, self.C + self.B * 3))
+        label_matrix = torch.zeros((self.S, self.S, 2, self.B * 3))
         for box in boxes:
             class_label, lwidth, lheight, rwidth, rheight = box.tolist()
             class_label = int(class_label)
@@ -201,9 +201,9 @@ class PistolDataset(torch.utils.data.Dataset):
                 hand_ind = i * 2 
                 if box[hand_ind + 1] == 0 and box[hand_ind + 2] == 0:
                     continue
-                if label_matrix[0, 0, i, self.C] == 0:
+                if label_matrix[0, 0, i, 0] == 0:
                     # Set that there exists an object
-                    label_matrix[0, 0, i, self.C] = 1
+                    label_matrix[0, 0, i, 0] = 1
 
                     width_cell, height_cell = cell_sizes[i]
 
@@ -212,7 +212,7 @@ class PistolDataset(torch.utils.data.Dataset):
                         [width_cell, height_cell]
                     )
 
-                    label_matrix[0, 0, i, self.C + 1:self.C + 3] = box_coordinates
+                    label_matrix[0, 0, i, 1:3] = box_coordinates
 
                     # Set one hot encoding for class_label
                     label_matrix[0, 0,i, class_label] = 1
