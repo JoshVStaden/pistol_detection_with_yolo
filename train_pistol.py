@@ -55,11 +55,11 @@ def show_losses(losses, filename="losses.png"):
     obj = []
     noobj = []
     classes = []
-    for l in losses:
+    for l in losses[-200:]:
         b, o, n, c = l
         box.append(b.item())
-        obj.append(o.item())
-        noobj.append(n.item())
+        # obj.append(o.item())
+        # noobj.append(n.item())
         classes.append(c.item())
     plt.plot(box, label="Box Loss")
     plt.plot(obj, label="Object Loss")
