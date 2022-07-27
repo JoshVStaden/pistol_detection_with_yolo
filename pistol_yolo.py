@@ -3,12 +3,10 @@ Implementation of Yolo (v1) architecture
 with slight modification with added BatchNorm.
 """
 
-from operator import mod
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 from torchvision.transforms.functional import affine
-from zmq import device
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 

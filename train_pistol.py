@@ -1,4 +1,3 @@
-from dis import dis
 import torch
 import torchvision.transforms as transforms
 import torch.optim as optim
