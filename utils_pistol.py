@@ -123,7 +123,7 @@ def mean_average_precision(
         float: mAP value across all classes given a specific IoU threshold 
     """
 
-    print(pred_boxes, true_boxes)
+    print(len(pred_boxes), len(true_boxes))
     quit()
 
     # list storing all AP for respective classes
@@ -276,7 +276,7 @@ def get_bboxes(
         batch_size = x.shape[0]
         # print(labels.size())
         # quit()
-        true_bboxes = cellboxes_to_boxes(labels[...,:])
+        true_bboxes = cellboxes_to_boxes(labels[...,:], x_hands=x_hands)
         bboxes = cellboxes_to_boxes(predictions, x_hands=x_hands)
 
         for idx in range(batch_size):
@@ -375,26 +375,34 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
 
     
     predictions = predictions.to("cpu")
+    x_hands = x_hands.to("cpu")
     batch_size = predictions.shape[0]
     predictions = predictions.reshape(batch_size, 2, (B * 3))
 
     bboxes_w = predictions[...,:, 1:] / 2
-    bboxes = predictions[...,:, 1:]
-    bboxes = torch.cat((bboxes - bboxes_w, bboxes + bboxes_w), dim=1)
+    bboxes = x_hands[...,:, 1:]
+    # print(x_hands.size())
+    # quit()
+    bboxes = torch.cat((bboxes - bboxes_w, bboxes + bboxes_w), dim=-1)
 
 
     scores = torch.cat(
         (predictions[..., 0, 0].unsqueeze(0), predictions[...,1, 0].unsqueeze(0)), dim=0
     )
-    cell_indices = torch.arange(7).repeat(batch_size, 7, 1).unsqueeze(-1)
-    x = 1 / S * (best_boxes[..., :1] + cell_indices)
-    y = 1 / S * (best_boxes[..., 1:2] + cell_indices.permute(0, 2, 1, 3))
-    w_y = 1 / S * best_boxes[..., 2:4]
-    converted_bboxes = torch.cat((x, y, w_y), dim=-1)
-    predicted_class = predictions[..., :20].argmax(-1).unsqueeze(-1)
-    best_confidence = torch.max(predictions[..., 20], predictions[..., 25]).unsqueeze(
-        -1
-    )
+    cell_indices = torch.arange(S).repeat(batch_size, S, 1).unsqueeze(-1)
+    # x = 1 / S * (bboxes[..., :1] + cell_indices)
+    # y = 1 / S * (bboxes[..., 1:2] + cell_indices.permute(0, 2, 1, 3))
+    # w_y = 1 / S * bboxes[..., 2:4]
+
+    # print(x.size(), y.size(), w_y.size(), bboxes.size())
+    # quit()
+    # converted_bboxes = torch.cat((x[...,0], y[...,0], w_y), dim=-1)
+    converted_bboxes = bboxes
+    predicted_class = torch.round(predictions[..., :, 0]).unsqueeze(-1)
+    best_confidence = predictions[..., :, :1]#torch.max(predictions[..., 20], predictions[..., 25]).unsqueeze(
+    #     -1
+    # )
+    # print(predicted_class.size(), best_confidence.size(), converted_bboxes.size())
     converted_preds = torch.cat(
         (predicted_class, best_confidence, converted_bboxes), dim=-1
     )
