@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from collections import Counter
 from tqdm import tqdm
+import matplotlib.patches as patches
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -244,6 +245,29 @@ def plot_image(image, boxes):
 
     plt.show()
 
+def example_images(x, labels, predictions):
+    x, x_hands = x
+    width, height = x.size()[-2], x.size()[-1]
+    batch_size = x.size()[0]
+
+    print(predictions.size())
+    quit()
+    for i in range(batch_size):
+        x = x[i,...]
+        x_hand = x_hands[i,...]
+        pred = predictions[i, ...]
+        pred_left = pred[:3]/2
+        pred_right = pred[3:]/2
+        x_pos_l = x_hands[0,0] - pred[1]
+        y_pos_l = x_hands[0,1] - pred[2]
+        x_pos_r = x_hands[1,0] + pred[4]
+        y_pos_r = x_hands[1,1] + pred[5]
+        plt.figure()
+        plt.imshow(x)
+
+
+    quit()
+
 def get_bboxes(
     loader,
     model,
@@ -262,14 +286,14 @@ def get_bboxes(
     train_idx = 0
 
     # quit()
-
     for batch_idx, ((x, x_hands), labels) in enumerate(loader):
         x = x.to(device)
         x_hands = x_hands.to(device)
         labels = labels.to(device)
         with torch.no_grad():
             predictions = model((x, x_hands))
-
+        if batch_idx == 0:
+            example_images((x, x_hands), labels, predictions)
         batch_size = x.shape[0]
         # print(labels.size())
         # quit()

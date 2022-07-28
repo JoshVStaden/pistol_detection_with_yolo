@@ -147,7 +147,7 @@ def main():
                 "optimizer": optimizer.state_dict()
             }
             save_checkpoint(checkpoint, filename=LOAD_MODEL_FILE)
-            time.sleep(10)
+            time.sleep(3)
             
 
         print(f"Train mAP: {mean_avg_prec}")
