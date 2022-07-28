@@ -213,8 +213,9 @@ def mean_average_precision(
 
     return sum(average_precisions) / len(average_precisions)
 
-def plot_image(image, boxes):
+def plot_image(image, boxes, filename="image.png"):
     """Plots predicted bounding boxes on the image"""
+    base_dir = "examples/"
     im = np.array(image)
     height, width, _ = im.shape
 
@@ -228,6 +229,8 @@ def plot_image(image, boxes):
 
     # Create a Rectangle potch
     for box in boxes:
+        print(box)
+        quit()
         box = box[2:]
         assert len(box) == 4, "Got more values than in x, y, w, h, in a box!"
         upper_left_x = box[0] - box[2] / 2
@@ -243,7 +246,7 @@ def plot_image(image, boxes):
         # Add the patch to the Axes
         ax.add_patch(rect)
 
-    plt.show()
+    plt.savefig(base_dir + filename)
 
 def example_images(x, labels, predictions):
     x, x_hands = x
@@ -292,8 +295,8 @@ def get_bboxes(
         labels = labels.to(device)
         with torch.no_grad():
             predictions = model((x, x_hands))
-        if batch_idx == 0:
-            example_images((x, x_hands), labels, predictions)
+        # if batch_idx == 0:
+        #     example_images((x, x_hands), labels, predictions)
         batch_size = x.shape[0]
         # print(labels.size())
         # quit()
@@ -310,9 +313,10 @@ def get_bboxes(
             nms_boxes = bboxes[idx]
 
 
-            #if batch_idx == 0 and idx == 0:
-            #    plot_image(x[idx].permute(1,2,0).to("cpu"), nms_boxes)
-            #    print(nms_boxes)
+            if batch_idx == 0 and idx <= 4:
+               plot_image(x[idx].permute(1,2,0).to("cpu"), true_bboxes, filename="label_{idx}.png")
+               plot_image(x[idx].permute(1,2,0).to("cpu"), nms_boxes, filename="prediction_{idx}.png")
+               print(nms_boxes)
 
             for nms_box in nms_boxes:
                 all_pred_boxes.append([train_idx] + nms_box)
@@ -401,11 +405,15 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
     batch_size = predictions.shape[0]
     predictions = predictions.reshape(batch_size, 2, (B * 3))
 
-    bboxes_w = predictions[...,:, 1:] / 2
-    bboxes = x_hands[...,:, 1:]
-    # print(x_hands.size())
+    bboxes_w = predictions[..., 1:] / 2
+    bboxes = x_hands[:, :]
+    # print(predictions.size())
+    # print(bboxes_w[0,...])
+    # print(bboxes[0,...])
     # quit()
     bboxes = torch.cat((bboxes - bboxes_w, bboxes + bboxes_w), dim=-1)
+    # print(bboxes[0,...])
+    # quit()
 
 
     scores = torch.cat(
@@ -434,6 +442,8 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
 
 def cellboxes_to_boxes(out, S=1, x_hands=None):
     converted_pred = convert_cellboxes(out, x_hands=x_hands).reshape(out.shape[0], S * S, -1)
+    # print(converted_pred)
+    # quit()
     converted_pred[..., 0] = converted_pred[..., 0].long()
     all_bboxes = []
 
