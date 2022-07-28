@@ -123,9 +123,6 @@ def mean_average_precision(
         float: mAP value across all classes given a specific IoU threshold 
     """
 
-    print(len(pred_boxes), len(true_boxes))
-    quit()
-
     # list storing all AP for respective classes
     average_precisions = []
 
@@ -280,12 +277,13 @@ def get_bboxes(
         bboxes = cellboxes_to_boxes(predictions, x_hands=x_hands)
 
         for idx in range(batch_size):
-            nms_boxes = non_max_suppression(
-                bboxes[idx],
-                iou_threshold=iou_threshold,
-                threshold=threshold,
-                box_format=box_format,
-            )
+            # nms_boxes = non_max_suppression(
+            #     bboxes[idx],
+            #     iou_threshold=iou_threshold,
+            #     threshold=threshold,
+            #     box_format=box_format,
+            # )
+            nms_boxes = bboxes[idx]
 
 
             #if batch_idx == 0 and idx == 0:
