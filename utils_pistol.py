@@ -1,4 +1,3 @@
-from charset_normalizer import detect
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -110,7 +109,7 @@ def non_max_suppression(bboxes, iou_threshold, threshold, box_format="corners"):
 
 
 def mean_average_precision(
-    pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint", num_classes=20
+    total_pred_boxes, total_true_boxes, iou_threshold=0.5, box_format="corners", num_classes=20
 ):
     """
     Calculates mean average precision 
@@ -131,30 +130,33 @@ def mean_average_precision(
     # used for numerical stability later on
     epsilon = 1e-6
 
-    for c in range(2):
+    for c in range(num_classes):
         detections = []
         ground_truths = []
+
+        pred_boxes = [total_pred_boxes[0]]
+        pred_boxes.append(total_pred_boxes[ 1 + c])
+        for i in range(4):
+            pred_boxes.append(total_pred_boxes[ 1 + (c * 4) + i])
+        # print(pred_boxes[0])
+        # quit()
+
+        true_boxes = [total_true_boxes[ 0]]
+        true_boxes.append(total_true_boxes[ 1 + c])
+        for i in range(4):
+            true_boxes.append(total_true_boxes[ 1 + (c * 4) + i])
 
         # Go through all predictions and targets,
         # and only add the ones that belong to the
         # current class c
         for detection in pred_boxes:
-            if detection[1 + c ] == 1:
-                d = [detection[0]]
-                d.append(detection[ 1 + c])
-                for i in range(4):
-                    d.append(detection[ 3 + (c * 4) + i])
-
-                detections.append(d)
+            # print(detection)
+            if detection[1] == c:
+                detections.append(detection)
 
         for true_box in true_boxes:
-            if true_box[1 + c] == 1:
-                d = [true_box[0]]
-                d.append(true_box[ 1 + c])
-                for i in range(4):
-                    d.append(true_box[ 3 + (c * 4) + i])
-
-                ground_truths.append(d)
+            if true_box[1] == c:
+                ground_truths.append(true_box)
 
         # find the amount of bboxes for each training example
         # Counter here finds how many ground truth bboxes we get
@@ -170,7 +172,7 @@ def mean_average_precision(
             amount_bboxes[key] = torch.zeros(val)
 
         # sort by box probabilities which is index 2
-        # detections.sort(key=lambda x: x[2], reverse=True)
+        detections.sort(key=lambda x: x[2], reverse=True)
         TP = torch.zeros((len(detections)))
         FP = torch.zeros((len(detections)))
         total_true_bboxes = len(ground_truths)
@@ -191,8 +193,8 @@ def mean_average_precision(
 
             for idx, gt in enumerate(ground_truth_img):
                 iou = intersection_over_union(
-                    torch.tensor(detection[2:]),
-                    torch.tensor(gt[2:]),
+                    torch.tensor(detection[3:]),
+                    torch.tensor(gt[3:]),
                     box_format=box_format,
                 )
 

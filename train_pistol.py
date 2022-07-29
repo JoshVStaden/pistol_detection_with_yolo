@@ -26,7 +26,7 @@ import time
 # Hyperparameters
 LEARNING_RATE = 1e-6
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 WEIGHT_DECAY = 0
 EPOCHS = 100
 NUM_WORKERS = 6
@@ -141,8 +141,8 @@ def main():
         pred_boxes, target_boxes = get_bboxes(
             train_loader, model, iou_threshold=0.5, threshold=0.4
         )
-        mean_avg_prec = mean_average_precision(pred_boxes, target_boxes, iou_threshold=0.5, box_format="midpoint")
-        if mean_avg_prec > 0.9:
+        mean_avg_prec = mean_average_precision(target_boxes, target_boxes, iou_threshold=0.5, box_format="corners")
+        if mean_avg_prec > 0.2:
             checkpoint = {
                 "state_dict": model.state_dict(),
                 "optimizer": optimizer.state_dict()
