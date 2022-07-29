@@ -1,3 +1,4 @@
+from charset_normalizer import detect
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -130,7 +131,7 @@ def mean_average_precision(
     # used for numerical stability later on
     epsilon = 1e-6
 
-    for c in range(num_classes):
+    for c in range(2):
         detections = []
         ground_truths = []
 
@@ -138,12 +139,22 @@ def mean_average_precision(
         # and only add the ones that belong to the
         # current class c
         for detection in pred_boxes:
-            if detection[1] == c:
-                detections.append(detection)
+            if detection[1 + c ] == 1:
+                d = [detection[0]]
+                d.append(detection[ 1 + c])
+                for i in range(4):
+                    d.append(detection[ 3 + (c * 4) + i])
+
+                detections.append(d)
 
         for true_box in true_boxes:
-            if true_box[1] == c:
-                ground_truths.append(true_box)
+            if true_box[1 + c] == 1:
+                d = [true_box[0]]
+                d.append(true_box[ 1 + c])
+                for i in range(4):
+                    d.append(true_box[ 3 + (c * 4) + i])
+
+                ground_truths.append(d)
 
         # find the amount of bboxes for each training example
         # Counter here finds how many ground truth bboxes we get
@@ -159,7 +170,7 @@ def mean_average_precision(
             amount_bboxes[key] = torch.zeros(val)
 
         # sort by box probabilities which is index 2
-        detections.sort(key=lambda x: x[2], reverse=True)
+        # detections.sort(key=lambda x: x[2], reverse=True)
         TP = torch.zeros((len(detections)))
         FP = torch.zeros((len(detections)))
         total_true_bboxes = len(ground_truths)
@@ -180,8 +191,8 @@ def mean_average_precision(
 
             for idx, gt in enumerate(ground_truth_img):
                 iou = intersection_over_union(
-                    torch.tensor(detection[3:]),
-                    torch.tensor(gt[3:]),
+                    torch.tensor(detection[2:]),
+                    torch.tensor(gt[2:]),
                     box_format=box_format,
                 )
 
