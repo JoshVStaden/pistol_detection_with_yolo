@@ -135,6 +135,7 @@ def main():
     )
 
     batch_losses, mean_losses= [], []
+    mAPs = []
 
     for epoch in range(EPOCHS):
         pred_boxes, target_boxes = get_bboxes(
@@ -151,6 +152,7 @@ def main():
             
 
         print(f"Train mAP: {mean_avg_prec}")
+        mAPs.append(mean_avg_prec)
 
         b_loss, m_loss = train_fn(train_loader, model, optimizer, loss_fn)
         batch_losses.extend(b_loss)
@@ -171,6 +173,14 @@ def main():
             plt.ylabel("Loss")
             plt.title("Mean Losses")
             plt.savefig("mean_losses.png")
+            plt.close()
+
+            plt.figure()
+            plt.plot(mAPs)
+            plt.xlabel("Epochs")
+            plt.ylabel("mAP")
+            plt.title("Mean Average Precision")
+            plt.savefig("mAP.png")
             plt.close()
 
 
