@@ -182,8 +182,10 @@ class YoloLoss(nn.Module):
 
         There is a 1 if there is an object there, 0 otherwise.
         """
-        left_target = target[:, 0, 0, 0,:]
-        right_target = target[:, 0, 0, 1,:]
+        # print(target.size())
+        # quit()
+        left_target = target[:, 0,:]
+        right_target = target[:, 1,:]
 
         left_pred = predictions[...,:3]
         right_pred = predictions[...,3:]

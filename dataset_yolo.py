@@ -108,11 +108,11 @@ class PistolDataset(torch.utils.data.Dataset):
                         elif bndbox_child.tag == "ymin":
                             y_data.append(int(bndbox_child.text)/ im_height)
 
-                        if len(x_data) == 2:
-                            curr_data[4] = max(x_data) - min(x_data)
-                        elif len(y_data) == 2:
-                            curr_data[5] = max(y_data) - min(y_data)
                 
+                    curr_data[4] = max(x_data) - min(x_data)
+                
+                    curr_data[5] = max(y_data) - min(y_data)
+        
                 if child.tag == "lbbox":
                     curr_data[0] = 1
                     x_data = []
@@ -127,10 +127,10 @@ class PistolDataset(torch.utils.data.Dataset):
                         elif bndbox_child.tag == "ymin":
                             y_data.append(int(bndbox_child.text)/ im_height)
 
-                        if len(x_data) == 2:
-                            curr_data[2] = max(x_data) - min(x_data)
-                        elif len(y_data) == 2:
-                            curr_data[3] = max(y_data) - min(y_data)
+                    
+                    curr_data[1] = max(x_data) - min(x_data)
+                
+                    curr_data[2] = max(y_data) - min(y_data)
                 
                 if child.tag == "lhand":
                     for l in child:
@@ -161,8 +161,6 @@ class PistolDataset(torch.utils.data.Dataset):
         
         boxes = torch.tensor(boxes)
         hand_arr = torch.Tensor(hands)
-        print(boxes.size(), hand_arr.size())
-        quit()
 
         image = (image, hand_arr)
 
@@ -171,6 +169,8 @@ class PistolDataset(torch.utils.data.Dataset):
 
         # Convert To Cells
         label_matrix = torch.zeros(( 2, self.B * 3))
+        # print(boxes)
+        # quit()
         for box in boxes:
             # print(boxes)
             # quit()
@@ -208,7 +208,8 @@ class PistolDataset(torch.utils.data.Dataset):
             # per cell!
 
             for i in range(2):
-                hand_ind = i * 2 
+                hand_ind = i * 3 
+                # print(box)
                 if box[hand_ind + 1] == 0 and box[hand_ind + 2] == 0:
                     continue
                 if label_matrix[ i, 0] == 0:
@@ -227,8 +228,5 @@ class PistolDataset(torch.utils.data.Dataset):
                     label_matrix[ i, 1:3] = box_coordinates
 
                     # Set one hot encoding for class_label
-                    label_matrix[i, class_label] = 1
-                    print(label_matrix)
-                    quit()
         return image, label_matrix
 

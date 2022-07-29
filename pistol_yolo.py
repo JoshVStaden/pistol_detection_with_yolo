@@ -104,7 +104,7 @@ class Yolov1(nn.Module):
     def forward(self, x):
         x, x_pos = x
         # print(x_pos.size())
-        l_pos, r_pos = x_pos[...,0,:], x_pos[...,1,:]
+        l_pos, r_pos = x_pos[...,:2], x_pos[...,2:]
         l = self._center_image(x, l_pos)
         r = self._center_image(x, r_pos)
         # plt.figure()

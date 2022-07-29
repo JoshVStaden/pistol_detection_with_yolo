@@ -228,25 +228,54 @@ def plot_image(image, boxes, filename="image.png"):
     # box[1] is y midpoint, box[3] is height
 
     # Create a Rectangle potch
-    for box in boxes:
-        print(box)
-        quit()
-        box = box[2:]
-        assert len(box) == 4, "Got more values than in x, y, w, h, in a box!"
-        upper_left_x = box[0] - box[2] / 2
-        upper_left_y = box[1] - box[3] / 2
-        rect = patches.Rectangle(
-            (upper_left_x * width, upper_left_y * height),
-            box[2] * width,
-            box[3] * height,
-            linewidth=1,
-            edgecolor="r",
-            facecolor="none",
-        )
-        # Add the patch to the Axes
-        ax.add_patch(rect)
+    boxes = boxes.numpy()
+    for i in range(1):
+        # print(box)
+        curr_box = boxes
+        # quit()
+        has_left_gun = curr_box[0] == 1
+        has_right_gun = curr_box[1] == 1
+        if has_left_gun:
+                
+            box = curr_box[[4, 5, 8, 9]]
+            assert len(box) == 4, "Got more values than in x, y, w, h, in a box!"
+            boxwidth = box[2] - box[0]
+            boxheight = box[3] - box[1]
+
+            upper_left_x = box[0] 
+            upper_left_y = box[1]
+            rect = patches.Rectangle(
+                (upper_left_x * width, upper_left_y * height),
+                boxwidth * width,
+                boxheight * height,
+                linewidth=1,
+                edgecolor="r",
+                facecolor="none",
+            )
+            # Add the patch to the Axes
+            ax.add_patch(rect)
+        if has_right_gun:
+                
+            box = curr_box[[6, 7, 10, 11]]
+            assert len(box) == 4, "Got more values than in x, y, w, h, in a box!"
+            boxwidth = box[2] - box[0]
+            boxheight = box[3] - box[1]
+
+            upper_left_x = box[0] 
+            upper_left_y = box[1]
+            rect = patches.Rectangle(
+                (upper_left_x * width, upper_left_y * height),
+                boxwidth * width,
+                boxheight * height,
+                linewidth=1,
+                edgecolor="r",
+                facecolor="none",
+            )
+            # Add the patch to the Axes
+            ax.add_patch(rect)
 
     plt.savefig(base_dir + filename)
+    plt.close()
 
 def example_images(x, labels, predictions):
     x, x_hands = x
@@ -314,17 +343,23 @@ def get_bboxes(
 
 
             if batch_idx == 0 and idx <= 4:
-               plot_image(x[idx].permute(1,2,0).to("cpu"), true_bboxes, filename="label_{idx}.png")
-               plot_image(x[idx].permute(1,2,0).to("cpu"), nms_boxes, filename="prediction_{idx}.png")
-               print(nms_boxes)
+               plot_image(x[idx].permute(1,2,0).to("cpu"), true_bboxes[idx, ...], filename=f"label_{idx}.png")
+               plot_image(x[idx].permute(1,2,0).to("cpu"), nms_boxes, filename=f"prediction_{idx}.png")
 
-            for nms_box in nms_boxes:
-                all_pred_boxes.append([train_idx] + nms_box)
+            nms_boxes = nms_boxes.tolist()
 
-            for box in true_bboxes[idx]:
+            # for nms_box in nms_boxes:
+            all_pred_boxes.append([train_idx] + nms_boxes)
+            # print(true_bboxes.size())
+            # quit()
+
+            box = true_bboxes[idx]
+            box = box.tolist()
+
+            # for box in true_bboxes[idx]:
                 # many will get converted to 0 pred
-                if box[1] > threshold:
-                    all_true_boxes.append([train_idx] + box)
+            # if box[1] > threshold:
+            all_true_boxes.append([train_idx] + box)
             # loop.set_postfix(index=batch_idx, total=len(loop))
 
             train_idx += 1
@@ -375,6 +410,10 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
     code... Use as a black box? Or implement a more intuitive,
     using 2 for loops iterating range(S) and convert them one
     by one, resulting in a slower but more readable implementation.
+
+    Each box contains 12 elements. In order:
+
+    [left_class, right_class, left_conf, right_conf, l_xmin, l_ymin, r_xmin, r_ymin]
     # """
     # if x_hands is None:
     #     return _convert_target_cellbox(predictions, S, C, B)
@@ -404,14 +443,17 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
     x_hands = x_hands.to("cpu")
     batch_size = predictions.shape[0]
     predictions = predictions.reshape(batch_size, 2, (B * 3))
+    # print(predictions.size())
+    # quit()
 
-    bboxes_w = predictions[..., 1:] / 2
-    bboxes = x_hands[:, :]
+    bboxes_w = torch.cat((predictions[..., 0, 1:], predictions[..., 1, 1:]), dim=-1) / 2
+    bboxes = x_hands[:,0,:]
     # print(predictions.size())
     # print(bboxes_w[0,...])
     # print(bboxes[0,...])
     # quit()
     bboxes = torch.cat((bboxes - bboxes_w, bboxes + bboxes_w), dim=-1)
+    # bboxes = bboxes - bboxes_w, bboxes + bboxes_w
     # print(bboxes[0,...])
     # quit()
 
@@ -424,15 +466,12 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
     # y = 1 / S * (bboxes[..., 1:2] + cell_indices.permute(0, 2, 1, 3))
     # w_y = 1 / S * bboxes[..., 2:4]
 
-    # print(x.size(), y.size(), w_y.size(), bboxes.size())
-    # quit()
     # converted_bboxes = torch.cat((x[...,0], y[...,0], w_y), dim=-1)
     converted_bboxes = bboxes
-    predicted_class = torch.round(predictions[..., :, 0]).unsqueeze(-1)
-    best_confidence = predictions[..., :, :1]#torch.max(predictions[..., 20], predictions[..., 25]).unsqueeze(
+    predicted_class = torch.round(predictions[..., :, 0])
+    best_confidence = predictions[..., :, 0]#torch.max(predictions[..., 20], predictions[..., 25]).unsqueeze(
     #     -1
     # )
-    # print(predicted_class.size(), best_confidence.size(), converted_bboxes.size())
     converted_preds = torch.cat(
         (predicted_class, best_confidence, converted_bboxes), dim=-1
     )
@@ -441,10 +480,11 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
 
 
 def cellboxes_to_boxes(out, S=1, x_hands=None):
-    converted_pred = convert_cellboxes(out, x_hands=x_hands).reshape(out.shape[0], S * S, -1)
-    # print(converted_pred)
+    converted_pred = convert_cellboxes(out, x_hands=x_hands)#.reshape(out.shape[0], S * S, -1)
+    return converted_pred
+    # print(converted_pred.size())
     # quit()
-    converted_pred[..., 0] = converted_pred[..., 0].long()
+    # converted_pred[..., 0] = converted_pred[..., 0].long()
     all_bboxes = []
 
     for ex_idx in range(out.shape[0]):
