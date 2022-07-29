@@ -18,6 +18,8 @@ def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
     Returns:
         tensor: Intersection over union for all examples
     """
+    print(boxes_preds)
+    print(boxes_labels)
 
     if box_format == "midpoint":
         box1_x1 = boxes_preds[..., 0:1] - boxes_preds[..., 2:3] / 2
@@ -38,6 +40,9 @@ def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
         box2_y1 = boxes_labels[..., 1:2]
         box2_x2 = boxes_labels[..., 2:3]
         box2_y2 = boxes_labels[..., 3:4]
+        print(box1_x1, box1_x2)
+        print(box1_y1, box1_y2)
+        # quit()
 
     x1 = torch.max(box1_x1, box2_x1)
     y1 = torch.max(box1_y1, box2_y1)
@@ -49,6 +54,10 @@ def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
 
     box1_area = abs((box1_x2 - box1_x1) * (box1_y2 - box1_y1))
     box2_area = abs((box2_x2 - box2_x1) * (box2_y2 - box2_y1))
+
+    print(intersection, box1_area, box2_area)
+    quit()
+
 
     return intersection / (box1_area + box2_area - intersection + 1e-6)
 
@@ -130,34 +139,50 @@ def mean_average_precision(
     # used for numerical stability later on
     epsilon = 1e-6
 
-    for c in range(num_classes):
+
+    for c in range(2):
         detections = []
         ground_truths = []
 
-        pred_boxes = [total_pred_boxes[0]]
-        pred_boxes.append(total_pred_boxes[ 1 + c])
-        for i in range(4):
-            pred_boxes.append(total_pred_boxes[ 1 + (c * 4) + i])
-        # print(pred_boxes[0])
+        tmp = []
+        for b in total_pred_boxes:
+            # print(b)
+            pred_boxes = [b[0]]
+            pred_boxes.append(b[ 1 + c])
+            pred_boxes.append(b[ 3 + c])
+            for i in range(2):
+                pred_boxes.append(b[ 5 + (c * 2) + i])
+            for i in range(2):
+                pred_boxes.append(b[ 9 + (c * 2) + i])
+            tmp.append(pred_boxes)
+        pred_boxes = tmp
+        # print(len(pred_boxes[0]), len(total_pred_boxes))
         # quit()
+        # print(pred_boxes[0])
 
-        true_boxes = [total_true_boxes[ 0]]
-        true_boxes.append(total_true_boxes[ 1 + c])
-        for i in range(4):
-            true_boxes.append(total_true_boxes[ 1 + (c * 4) + i])
-
+        tmp = []
+        for b in total_true_boxes:
+            true_boxes = [b[0]]
+            true_boxes.append(b[ 1 + c])
+            true_boxes.append(b[ 3 + c])
+            for i in range(2):
+                true_boxes.append(b[ 5 + (c * 2) + i])
+            for i in range(2):
+                true_boxes.append(b[ 9 + (c * 2) + i])
+            tmp.append(true_boxes)
+        true_boxes = tmp
         # Go through all predictions and targets,
         # and only add the ones that belong to the
         # current class c
         for detection in pred_boxes:
             # print(detection)
-            if detection[1] == c:
+            if detection[1] == 1:
                 detections.append(detection)
 
         for true_box in true_boxes:
-            if true_box[1] == c:
+            if true_box[1] == 1:
                 ground_truths.append(true_box)
-
+    
         # find the amount of bboxes for each training example
         # Counter here finds how many ground truth bboxes we get
         # for each training example, so let's say img 0 has 3,
@@ -172,7 +197,7 @@ def mean_average_precision(
             amount_bboxes[key] = torch.zeros(val)
 
         # sort by box probabilities which is index 2
-        detections.sort(key=lambda x: x[2], reverse=True)
+        # detections.sort(key=lambda x: x[2], reverse=True)
         TP = torch.zeros((len(detections)))
         FP = torch.zeros((len(detections)))
         total_true_bboxes = len(ground_truths)
@@ -192,9 +217,10 @@ def mean_average_precision(
             best_iou = 0
 
             for idx, gt in enumerate(ground_truth_img):
+                print(gt)
                 iou = intersection_over_union(
-                    torch.tensor(detection[3:]),
-                    torch.tensor(gt[3:]),
+                    torch.tensor(detection[-4:]),
+                    torch.tensor(gt[-4:]),
                     box_format=box_format,
                 )
 
@@ -203,6 +229,7 @@ def mean_average_precision(
                     best_gt_idx = idx
 
             if best_iou > iou_threshold:
+                print(best_iou)
                 # only detect ground truth detection once
                 if amount_bboxes[detection[0]][best_gt_idx] == 0:
                     # true positive and add this bounding box to seen
@@ -223,7 +250,7 @@ def mean_average_precision(
         recalls = torch.cat((torch.tensor([0]), recalls))
         # torch.trapz for numerical integration
         average_precisions.append(torch.trapz(precisions, recalls))
-
+    quit()
     return sum(average_precisions) / len(average_precisions)
 
 def plot_image(image, boxes, filename="image.png"):
