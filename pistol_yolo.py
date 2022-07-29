@@ -119,7 +119,11 @@ class Yolov1(nn.Module):
         x2 = self.darknet(r)
         pred2 = self.fcs(torch.flatten(x2, start_dim=1)) 
 
-        pred = torch.cat((pred1, pred2), axis=1)
+        pred = torch.cat((
+            pred1[...,:1], 
+            pred2[...,:1],
+            pred1[...,1:],
+            pred2[...,1:]), axis=1)
         return pred 
 
     def _create_conv_layers(self, architecture):

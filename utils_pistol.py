@@ -18,8 +18,6 @@ def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
     Returns:
         tensor: Intersection over union for all examples
     """
-    print(boxes_preds)
-    print(boxes_labels)
 
     if box_format == "midpoint":
         box1_x1 = boxes_preds[..., 0:1] - boxes_preds[..., 2:3] / 2
@@ -40,9 +38,6 @@ def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
         box2_y1 = boxes_labels[..., 1:2]
         box2_x2 = boxes_labels[..., 2:3]
         box2_y2 = boxes_labels[..., 3:4]
-        print(box1_x1, box1_x2)
-        print(box1_y1, box1_y2)
-        # quit()
 
     x1 = torch.max(box1_x1, box2_x1)
     y1 = torch.max(box1_y1, box2_y1)
@@ -55,8 +50,6 @@ def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
     box1_area = abs((box1_x2 - box1_x1) * (box1_y2 - box1_y1))
     box2_area = abs((box2_x2 - box2_x1) * (box2_y2 - box2_y1))
 
-    print(intersection, box1_area, box2_area)
-    quit()
 
 
     return intersection / (box1_area + box2_area - intersection + 1e-6)
@@ -194,6 +187,8 @@ def mean_average_precision(
         # and convert to the following (w.r.t same example):
         # ammount_bboxes = {0:torch.tensor[0,0,0], 1:torch.tensor[0,0,0,0,0]}
         for key, val in amount_bboxes.items():
+            if val == 2:
+                quit()
             amount_bboxes[key] = torch.zeros(val)
 
         # sort by box probabilities which is index 2
@@ -217,13 +212,12 @@ def mean_average_precision(
             best_iou = 0
 
             for idx, gt in enumerate(ground_truth_img):
-                print(gt)
+                
                 iou = intersection_over_union(
                     torch.tensor(detection[-4:]),
                     torch.tensor(gt[-4:]),
                     box_format=box_format,
                 )
-
                 if iou > best_iou:
                     best_iou = iou
                     best_gt_idx = idx
@@ -244,13 +238,24 @@ def mean_average_precision(
 
         TP_cumsum = torch.cumsum(TP, dim=0)
         FP_cumsum = torch.cumsum(FP, dim=0)
+        print("---")
+        # quit()
         recalls = TP_cumsum / (total_true_bboxes + epsilon)
         precisions = torch.divide(TP_cumsum, (TP_cumsum + FP_cumsum + epsilon))
         precisions = torch.cat((torch.tensor([1]), precisions))
         recalls = torch.cat((torch.tensor([0]), recalls))
         # torch.trapz for numerical integration
+        print(precisions)
+        print(recalls)
+        print(torch.sum(TP) )
+        print(torch.sum(FP) )
+        print(torch.sum(TP) / (total_true_bboxes + epsilon))
+        print(torch.sum(FP) / (total_true_bboxes + epsilon))
         average_precisions.append(torch.trapz(precisions, recalls))
-    quit()
+        print("---")
+    print(sum(average_precisions) / len(average_precisions))
+    # if sum(average_precisions) > 0:
+    #     quit()
     return sum(average_precisions) / len(average_precisions)
 
 def plot_image(image, boxes, filename="image.png"):
@@ -289,7 +294,7 @@ def plot_image(image, boxes, filename="image.png"):
                 boxwidth * width,
                 boxheight * height,
                 linewidth=1,
-                edgecolor="r",
+                edgecolor="g",
                 facecolor="none",
             )
             # Add the patch to the Axes
