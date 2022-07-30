@@ -139,7 +139,7 @@ def mean_average_precision(
 
         tmp = []
         for b in total_pred_boxes:
-            # print(b)
+            
             pred_boxes = [b[0]]
             pred_boxes.append(b[ 1 + c])
             pred_boxes.append(b[ 3 + c])
@@ -149,9 +149,9 @@ def mean_average_precision(
                 pred_boxes.append(b[ 9 + (c * 2) + i])
             tmp.append(pred_boxes)
         pred_boxes = tmp
-        # print(len(pred_boxes[0]), len(total_pred_boxes))
-        # quit()
-        # print(pred_boxes[0])
+        
+        
+        
 
         tmp = []
         for b in total_true_boxes:
@@ -168,7 +168,7 @@ def mean_average_precision(
         # and only add the ones that belong to the
         # current class c
         for detection in pred_boxes:
-            # print(detection)
+            
             if detection[1] == 1:
                 detections.append(detection)
 
@@ -223,7 +223,7 @@ def mean_average_precision(
                     best_gt_idx = idx
 
             if best_iou > iou_threshold:
-                print(best_iou)
+                
                 # only detect ground truth detection once
                 if amount_bboxes[detection[0]][best_gt_idx] == 0:
                     # true positive and add this bounding box to seen
@@ -238,22 +238,22 @@ def mean_average_precision(
 
         TP_cumsum = torch.cumsum(TP, dim=0)
         FP_cumsum = torch.cumsum(FP, dim=0)
-        print("---")
-        # quit()
+        
+        
         recalls = TP_cumsum / (total_true_bboxes + epsilon)
         precisions = torch.divide(TP_cumsum, (TP_cumsum + FP_cumsum + epsilon))
         precisions = torch.cat((torch.tensor([1]), precisions))
         recalls = torch.cat((torch.tensor([0]), recalls))
         # torch.trapz for numerical integration
-        print(precisions)
-        print(recalls)
-        print(torch.sum(TP) )
-        print(torch.sum(FP) )
-        print(torch.sum(TP) / (total_true_bboxes + epsilon))
-        print(torch.sum(FP) / (total_true_bboxes + epsilon))
+        
+        
+        
+        
+        
+        
         average_precisions.append(torch.trapz(precisions, recalls))
-        print("---")
-    print(sum(average_precisions) / len(average_precisions))
+        
+    
     # if sum(average_precisions) > 0:
     #     quit()
     return sum(average_precisions) / len(average_precisions)
@@ -275,9 +275,9 @@ def plot_image(image, boxes, filename="image.png"):
     # Create a Rectangle potch
     boxes = boxes.numpy()
     for i in range(1):
-        # print(box)
+        
         curr_box = boxes
-        # quit()
+        
         has_left_gun = curr_box[0] == 1
         has_right_gun = curr_box[1] == 1
         if has_left_gun:
@@ -327,7 +327,7 @@ def example_images(x, labels, predictions):
     width, height = x.size()[-2], x.size()[-1]
     batch_size = x.size()[0]
 
-    print(predictions.size())
+    
     quit()
     for i in range(batch_size):
         x = x[i,...]
@@ -362,7 +362,7 @@ def get_bboxes(
     model.eval()
     train_idx = 0
 
-    # quit()
+    
     for batch_idx, ((x, x_hands), labels) in enumerate(loader):
         x = x.to(device)
         x_hands = x_hands.to(device)
@@ -372,8 +372,8 @@ def get_bboxes(
         # if batch_idx == 0:
         #     example_images((x, x_hands), labels, predictions)
         batch_size = x.shape[0]
-        # print(labels.size())
-        # quit()
+        
+        
         true_bboxes = cellboxes_to_boxes(labels[...,:], x_hands=x_hands)
         bboxes = cellboxes_to_boxes(predictions, x_hands=x_hands)
 
@@ -395,8 +395,8 @@ def get_bboxes(
 
             # for nms_box in nms_boxes:
             all_pred_boxes.append([train_idx] + nms_boxes)
-            # print(true_bboxes.size())
-            # quit()
+            
+            
 
             box = true_bboxes[idx]
             box = box.tolist()
@@ -478,8 +478,8 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
     # converted_preds = torch.cat(
     #     (predicted_class, best_confidence, converted_bboxes), dim=-1
     # )
-    # print(converted_preds.size(), x_hands.size())
-    # quit()
+    
+    
 
     # return converted_preds
 
@@ -488,19 +488,19 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
     x_hands = x_hands.to("cpu")
     batch_size = predictions.shape[0]
     predictions = predictions.reshape(batch_size, 2, (B * 3))
-    # print(predictions.size())
-    # quit()
+    
+    
 
     bboxes_w = torch.cat((predictions[..., 0, 1:], predictions[..., 1, 1:]), dim=-1) / 2
     bboxes = x_hands[:,0,:]
-    # print(predictions.size())
-    # print(bboxes_w[0,...])
-    # print(bboxes[0,...])
-    # quit()
+    
+    
+    
+    
     bboxes = torch.cat((bboxes - bboxes_w, bboxes + bboxes_w), dim=-1)
     # bboxes = bboxes - bboxes_w, bboxes + bboxes_w
-    # print(bboxes[0,...])
-    # quit()
+    
+    
 
 
     scores = torch.cat(
@@ -527,8 +527,8 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
 def cellboxes_to_boxes(out, S=1, x_hands=None):
     converted_pred = convert_cellboxes(out, x_hands=x_hands)#.reshape(out.shape[0], S * S, -1)
     return converted_pred
-    # print(converted_pred.size())
-    # quit()
+    
+    
     # converted_pred[..., 0] = converted_pred[..., 0].long()
     all_bboxes = []
 
@@ -542,11 +542,11 @@ def cellboxes_to_boxes(out, S=1, x_hands=None):
     return all_bboxes
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
-    print("=> Saving checkpoint")
+    
     torch.save(state, filename)
 
 
 def load_checkpoint(checkpoint, model, optimizer):
-    print("=> Loading checkpoint")
+    
     model.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
