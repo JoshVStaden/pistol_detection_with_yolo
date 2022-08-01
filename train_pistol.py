@@ -1,3 +1,4 @@
+from cgi import test
 import torch
 import torchvision.transforms as transforms
 import torch.optim as optim
@@ -26,13 +27,14 @@ import time
 # Hyperparameters
 LEARNING_RATE = 1e-6
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 64
+BATCH_SIZE = 8
 WEIGHT_DECAY = 1e-7
 EPOCHS = 1000
 NUM_WORKERS = 6
 PIN_MEMORY = True
 LOAD_MODEL = False
 LOAD_MODEL_FILE = "overfit.pth.tar"
+VAL_MODEL_FILE = "validated.pth.tar"
 IMG_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/modified/"
 
@@ -66,12 +68,13 @@ def show_losses(losses, filename="losses.png"):
 
 
 
-def train_fn(train_loader, model, optimizer, loss_fn):
+def train_fn(train_loader, model, optimizer, loss_fn, validation_set=None):
     loop = tqdm(train_loader, leave=True)
     mean_loss = []
     
     batch_losses = []
     displ = []
+    val_loss = []
 
     for batch_idx, ((x,x_pos), y) in enumerate(loop):
         x, y = (x.to(DEVICE), x_pos.to(DEVICE)), y.to(DEVICE)
@@ -90,6 +93,26 @@ def train_fn(train_loader, model, optimizer, loss_fn):
             show_losses(displ)
 
         loop.set_postfix(loss=loss.item(), box=b.item(), class_loss=c.item())
+
+    if validation_set is not None:
+        val_loop = tqdm(validation_set, leave=True)
+        print("Validation:")
+        
+        for batch_idx, ((x,x_pos), y) in enumerate(val_loop):
+            x, y = (x.to(DEVICE), x_pos.to(DEVICE)), y.to(DEVICE)
+            with torch.no_grad():
+                out = model(x)
+                loss, losses = loss_fn(out, y)
+            val_loss.append(loss.item())
+            displ.append(losses)
+            
+            b,  c = losses
+
+            loop.set_postfix(loss=loss.item(), val_box=b.item(), val_class_loss=c.item())
+        
+        print(f"Validation loss was {sum(val_loss) / len(val_loss)}")
+        print(f"Mean loss was {sum(mean_loss) / len(mean_loss)}")
+        return batch_losses, sum(mean_loss) / len(mean_loss), sum(val_loss) / len(val_loss)
 
     print(f"Mean loss was {sum(mean_loss) / len(mean_loss)}")
     return batch_losses, sum(mean_loss) / len(mean_loss)
@@ -134,14 +157,20 @@ def main():
         drop_last=True
     )
 
-    batch_losses, mean_losses= [], []
+    batch_losses, mean_losses, val_losses= [], [], []
     mAPs = []
+    val_mAPs = []
 
     for epoch in range(EPOCHS):
         pred_boxes, target_boxes = get_bboxes(
             train_loader, model, iou_threshold=0.5, threshold=0.4
         )
+        val_boxes, _ = get_bboxes(
+            test_loader, model, iou_threshold=0.5, threshold=0.4
+        )
         mean_avg_prec = mean_average_precision(pred_boxes, target_boxes, iou_threshold=0.5, box_format="corners")
+        mean_avg_prec_val = mean_average_precision(val_boxes, target_boxes, iou_threshold=0.5, box_format="corners")
+
         if mean_avg_prec > 0.5:
             checkpoint = {
                 "state_dict": model.state_dict(),
@@ -150,13 +179,23 @@ def main():
             save_checkpoint(checkpoint, filename=LOAD_MODEL_FILE)
             time.sleep(3)
             
+        if mean_avg_prec_val > 0.5:
+            checkpoint = {
+                "state_dict": model.state_dict(),
+                "optimizer": optimizer.state_dict()
+            }
+            save_checkpoint(checkpoint, filename=VAL_MODEL_FILE)
+            time.sleep(3)
 
         print(f"Train mAP: {mean_avg_prec}")
+        print(f"Validation mAP: {mean_avg_prec_val}")
         mAPs.append(mean_avg_prec)
+        val_mAPs.append(mean_avg_prec_val)
 
-        b_loss, m_loss = train_fn(train_loader, model, optimizer, loss_fn)
+        b_loss, m_loss, v_loss = train_fn(train_loader, model, optimizer, loss_fn, validation_set=test_loader)
         batch_losses.extend(b_loss)
         mean_losses.append(m_loss)
+        val_losses.append(v_loss)
 
         if (epoch + 1) % 5 == 0:
             plt.figure()
@@ -181,6 +220,24 @@ def main():
             plt.ylabel("mAP")
             plt.title("Mean Average Precision")
             plt.savefig("mAP.png")
+            plt.close()
+
+
+            plt.figure()
+            plt.plot(val_mAPs)
+            plt.xlabel("Epochs")
+            plt.ylabel("mAP")
+            plt.title("Mean Average Precision")
+            plt.savefig("val_mAP.png")
+            plt.close()
+            
+
+            plt.figure()
+            plt.plot(val_losses)
+            plt.xlabel("Epochs")
+            plt.ylabel("Loss")
+            plt.title("Validation Loss")
+            plt.savefig("val_losses.png")
             plt.close()
 
 
