@@ -506,7 +506,7 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
     scores = torch.cat(
         (predictions[..., 0, 0].unsqueeze(0), predictions[...,1, 0].unsqueeze(0)), dim=0
     )
-    cell_indices = torch.arange(S).repeat(batch_size, S, 1).unsqueeze(-1)
+    # cell_indices = torch.arange(S).repeat(batch_size, S, 1).unsqueeze(-1)
     # x = 1 / S * (bboxes[..., :1] + cell_indices)
     # y = 1 / S * (bboxes[..., 1:2] + cell_indices.permute(0, 2, 1, 3))
     # w_y = 1 / S * bboxes[..., 2:4]
