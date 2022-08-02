@@ -166,8 +166,8 @@ class YoloLoss(nn.Module):
 
     #     return loss, losses
 
-    def loss_one_hand(self, predictions, target):
-        lambda_coord = 5
+    def loss_one_hand(self, predictions, target, lambda_coord=1):
+        lambda_coord = 5 * lambda_coord
         lambda_noobj = 1#0.5
 
         w_pred = predictions[...,1]
@@ -209,7 +209,7 @@ class YoloLoss(nn.Module):
         
 
 
-    def forward(self, predictions, target):
+    def forward(self, predictions, target, lambda_coord=1):
         """
         Defaults:
             C = 1
@@ -233,8 +233,8 @@ class YoloLoss(nn.Module):
 
         left_pred = torch.cat((predictions[...,:1], predictions[...,2:4]), axis=-1)
         right_pred = torch.cat((predictions[...,1:2], predictions[...,4:]), axis=-1)
-        left_losses = self.loss_one_hand(left_pred, left_target)
-        right_losses = self.loss_one_hand(right_pred, right_target)
+        left_losses = self.loss_one_hand(left_pred, left_target, lambda_coord=lambda_coord)
+        right_losses = self.loss_one_hand(right_pred, right_target, lambda_coord=lambda_coord)
 
         total_losses = []
 

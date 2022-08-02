@@ -114,15 +114,9 @@ class Yolov1(nn.Module):
 
     def forward(self, x):
         x, x_pos = x
-        # print(x_pos.size())
         l_pos, r_pos = x_pos[...,:2], x_pos[...,2:]
         l = self._center_image(x, l_pos)
         r = self._center_image(x, r_pos)
-        # plt.figure()
-        # plt.imshow(x[0,...].cpu()[0,:,:])
-        # plt.savefig("transformed.png")
-        # plt.close()
-        # quit()
         x1 = self.darknet(l)
         pred1 = self.fcs(torch.flatten(x1, start_dim=1)) 
 

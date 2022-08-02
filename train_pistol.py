@@ -78,11 +78,14 @@ def train_fn(train_loader, model, optimizer, loss_fn, validation_set=None):
     batch_losses = []
     displ = []
     val_loss = []
+    lambda_coord = 0
 
     for batch_idx, ((x,x_pos), y) in enumerate(loop):
         x, y = (x.to(DEVICE), x_pos.to(DEVICE)), y.to(DEVICE)
         out = model(x)
-        loss, losses = loss_fn(out, y)
+        loss, losses = loss_fn(out, y, lambda_coord=lambda_coord)
+        if lambda_coord < 1:
+            lambda_coord += 2e-2
         batch_losses.append(loss.item())
         mean_loss.append(loss.item())
         displ.append(losses)

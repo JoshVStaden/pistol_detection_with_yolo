@@ -363,7 +363,7 @@ def get_bboxes(
     model.eval()
     train_idx = 0
 
-    
+    im_no = 0
     for batch_idx, ((x, x_hands), labels) in enumerate(loader):
         x = x.to(device)
         x_hands = x_hands.to(device)
@@ -388,9 +388,10 @@ def get_bboxes(
             nms_boxes = bboxes[idx]
 
 
-            if batch_idx == 0 and idx <= 4:
-               plot_image(x[idx].permute(1,2,0).to("cpu"), true_bboxes[idx, ...], filename=f"label_{idx}.png", validation=validation)
-               plot_image(x[idx].permute(1,2,0).to("cpu"), nms_boxes, filename=f"prediction_{idx}.png", validation=validation)
+            if True:# batch_idx == 0 and idx <= 4:
+               plot_image(x[idx].permute(1,2,0).to("cpu"), true_bboxes[idx, ...], filename=f"label_{im_no}.png", validation=validation)
+               plot_image(x[idx].permute(1,2,0).to("cpu"), nms_boxes, filename=f"prediction_{im_no}.png", validation=validation)
+               im_no += 1
 
             nms_boxes = nms_boxes.tolist()
 
