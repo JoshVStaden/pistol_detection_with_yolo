@@ -168,7 +168,7 @@ class YoloLoss(nn.Module):
 
     def loss_one_hand(self, predictions, target):
         lambda_coord = 5
-        lambda_noobj = 0.5
+        lambda_noobj = 1#0.5
 
         w_pred = predictions[...,1]
         w_target = target[...,1]
@@ -181,17 +181,22 @@ class YoloLoss(nn.Module):
 
         obj_1 = c_target == 1
         noobj_1 = c_target == 0
+        # print(obj_1)
+        # print(noobj_1)
+        # print(w_target[obj_1].size())
+        # print(w_target[noobj_1].size())
+        # quit()
 
-        size_loss = lambda_coord * ((torch.sqrt(w_target[obj_1]) - torch.sqrt(w_pred[obj_1]) )** 2 + 
-                                    (torch.sqrt(h_target[obj_1]) - torch.sqrt(h_pred[obj_1]) )** 2)
+        size_loss = torch.mul(torch.square(torch.sqrt(w_target[obj_1]) - torch.sqrt(w_pred[obj_1]) ) + 
+                                    torch.square(torch.sqrt(h_target[obj_1]) - torch.sqrt(h_pred[obj_1]) ), lambda_coord)
 
         # print(size_loss)
         # print(torch.sqrt(w_target[obj_1]) - torch.sqrt(w_pred[obj_1]) ** 2)
         # print(torch.sqrt(h_target[obj_1]) - torch.sqrt(h_pred[obj_1]) ** 2)
         # quit()
-        obj_loss = (c_target[obj_1] - c_pred[obj_1]) ** 2
-        noobj_loss = (c_target[noobj_1] - c_pred[noobj_1]) ** 2
-        noobj_loss *= lambda_noobj
+        obj_loss = torch.square(c_target[obj_1] - c_pred[obj_1])
+        noobj_loss = torch.mul(torch.square(c_target[noobj_1] - c_pred[noobj_1]), lambda_noobj)
+        # noobj_loss *= lambda_noobj
 
         size_loss = torch.sum(size_loss)
         obj_loss = torch.sum(obj_loss)
@@ -226,8 +231,8 @@ class YoloLoss(nn.Module):
         left_target = target[:, 0,:]
         right_target = target[:, 1,:]
 
-        left_pred = predictions[...,:3]
-        right_pred = predictions[...,3:]
+        left_pred = torch.cat((predictions[...,:1], predictions[...,2:4]), axis=-1)
+        right_pred = torch.cat((predictions[...,1:2], predictions[...,4:]), axis=-1)
         left_losses = self.loss_one_hand(left_pred, left_target)
         right_losses = self.loss_one_hand(right_pred, right_target)
 
