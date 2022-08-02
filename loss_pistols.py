@@ -189,8 +189,8 @@ class YoloLoss(nn.Module):
         # print(torch.sqrt(w_target[obj_1]) - torch.sqrt(w_pred[obj_1]) ** 2)
         # print(torch.sqrt(h_target[obj_1]) - torch.sqrt(h_pred[obj_1]) ** 2)
         # quit()
-        obj_loss = (1 - c_pred[obj_1]) ** 2
-        noobj_loss = (0 - c_pred[noobj_1]) ** 2
+        obj_loss = (c_target[obj_1] - c_pred[obj_1]) ** 2
+        noobj_loss = (c_target[noobj_1] - c_pred[noobj_1]) ** 2
         noobj_loss *= lambda_noobj
 
         size_loss = torch.sum(size_loss)
@@ -230,8 +230,7 @@ class YoloLoss(nn.Module):
         right_pred = predictions[...,3:]
         left_losses = self.loss_one_hand(left_pred, left_target)
         right_losses = self.loss_one_hand(right_pred, right_target)
-        # print(predictions.size())
-        # quit()
+
         total_losses = []
 
         for l, r in zip(left_losses, right_losses):

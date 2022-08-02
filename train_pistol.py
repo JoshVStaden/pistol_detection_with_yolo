@@ -25,10 +25,10 @@ import time
 # torch.manual_seed(seed)
 
 # Hyperparameters
-LEARNING_RATE = 1e-6
+LEARNING_RATE = 1e-5
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 8
-WEIGHT_DECAY = 1e-7
+WEIGHT_DECAY = 1e-2
 EPOCHS = 1000
 NUM_WORKERS = 6
 PIN_MEMORY = True
@@ -37,6 +37,7 @@ LOAD_MODEL_FILE = "overfit.pth.tar"
 VAL_MODEL_FILE = "validated.pth.tar"
 IMG_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/modified/"
+VALIDATE=False
 
 class Compose(object):
     def __init__(self,transforms):
@@ -70,6 +71,7 @@ transform = Compose([transforms.Resize((448, 448)),transforms.ToTensor()])
 
 
 def train_fn(train_loader, model, optimizer, loss_fn, validation_set=None):
+    print("Train:")
     loop = tqdm(train_loader, leave=True)
     mean_loss = []
     
@@ -97,8 +99,8 @@ def train_fn(train_loader, model, optimizer, loss_fn, validation_set=None):
         loop.set_postfix(loss=round(loss.item(), 4), box=b, obj_loss=o, noobj_loss=n)
 
     if validation_set is not None:
-        val_loop = tqdm(validation_set, leave=True)
         print("Validation:")
+        val_loop = tqdm(validation_set, leave=True)
         
         for batch_idx, ((x,x_pos), y) in enumerate(val_loop):
             x, y = (x.to(DEVICE), x_pos.to(DEVICE)), y.to(DEVICE)
@@ -136,13 +138,6 @@ def main():
         img_dir=IMG_DIR + "train/",
         label_dir=LABEL_DIR
     )
-    
-    test_dataset = PistolDataset(
-        "CCTV/test_copy.txt",
-        transform=transform,
-        img_dir=IMG_DIR + "test/",
-        label_dir=LABEL_DIR
-    )
     train_loader = DataLoader(
         dataset=train_dataset,
         batch_size=BATCH_SIZE,
@@ -151,14 +146,24 @@ def main():
         shuffle=True,
         drop_last=False
     )
-    test_loader = DataLoader(
-        dataset=test_dataset,
-        batch_size=BATCH_SIZE,
-        num_workers=NUM_WORKERS,
-        pin_memory=PIN_MEMORY,
-        shuffle=True,
-        drop_last=True
-    )
+    
+    if VALIDATE:
+        test_dataset = PistolDataset(
+            "CCTV/test_copy.txt",
+            transform=transform,
+            img_dir=IMG_DIR + "test/",
+            label_dir=LABEL_DIR
+        )
+        test_loader = DataLoader(
+            dataset=test_dataset,
+            batch_size=BATCH_SIZE,
+            num_workers=NUM_WORKERS,
+            pin_memory=PIN_MEMORY,
+            shuffle=True,
+            drop_last=True
+        )
+    else:
+        test_loader=None
 
     batch_losses, mean_losses, val_losses= [], [], []
     mAPs = []
@@ -168,14 +173,31 @@ def main():
         print("----------------------------------------------")
         print("----------------------------------------------")
         print(f"Epoch {epoch + 1}:")
+        if VALIDATE:
+            b_loss, m_loss, v_loss = train_fn(train_loader, model, optimizer, loss_fn, validation_set=test_loader)
+            batch_losses.extend(b_loss)
+            mean_losses.append(m_loss)
+            val_losses.append(v_loss)
+        else:
+            b_loss, m_loss = train_fn(train_loader, model, optimizer, loss_fn )
+            batch_losses.extend(b_loss)
+            mean_losses.append(m_loss)
         pred_boxes, target_boxes = get_bboxes(
             train_loader, model, iou_threshold=0.5, threshold=0.4
         )
-        val_boxes, _ = get_bboxes(
-            test_loader, model, iou_threshold=0.5, threshold=0.4
-        )
         mean_avg_prec = mean_average_precision(pred_boxes, target_boxes, iou_threshold=0.5, box_format="corners")
-        mean_avg_prec_val = mean_average_precision(val_boxes, target_boxes, iou_threshold=0.5, box_format="corners")
+        if VALIDATE:
+            
+            val_boxes, _ = get_bboxes(
+                test_loader, model, iou_threshold=0.5, threshold=0.4
+            )
+            mean_avg_prec_val = mean_average_precision(val_boxes, target_boxes, iou_threshold=0.5, box_format="corners")
+        
+        print(f"Train mAP: {mean_avg_prec}")
+        if VALIDATE:
+            print(f"Validation mAP: {mean_avg_prec_val}")
+            val_mAPs.append(mean_avg_prec_val)
+        mAPs.append(mean_avg_prec)
 
         if mean_avg_prec > 0.5:
             checkpoint = {
@@ -184,26 +206,17 @@ def main():
             }
             save_checkpoint(checkpoint, filename=LOAD_MODEL_FILE)
             time.sleep(3)
-            
-        if mean_avg_prec_val > 0.5:
-            checkpoint = {
-                "state_dict": model.state_dict(),
-                "optimizer": optimizer.state_dict()
-            }
-            save_checkpoint(checkpoint, filename=VAL_MODEL_FILE)
-            time.sleep(3)
+        if VALIDATE:
+            if mean_avg_prec_val > 0.5:
+                checkpoint = {
+                    "state_dict": model.state_dict(),
+                    "optimizer": optimizer.state_dict()
+                }
+                save_checkpoint(checkpoint, filename=VAL_MODEL_FILE)
+                time.sleep(3)
 
-        print(f"Train mAP: {mean_avg_prec}")
-        print(f"Validation mAP: {mean_avg_prec_val}")
-        mAPs.append(mean_avg_prec)
-        val_mAPs.append(mean_avg_prec_val)
 
-        b_loss, m_loss, v_loss = train_fn(train_loader, model, optimizer, loss_fn, validation_set=test_loader)
-        batch_losses.extend(b_loss)
-        mean_losses.append(m_loss)
-        val_losses.append(v_loss)
-
-        if (epoch + 1) % 5 == 0:
+        if (epoch + 1) % 1 == 0:
             plt.figure()
             plt.plot(batch_losses)
             plt.xlabel("Batches")
@@ -228,23 +241,23 @@ def main():
             plt.savefig("mAP.png")
             plt.close()
 
+            if VALIDATE:
+                plt.figure()
+                plt.plot(val_mAPs)
+                plt.xlabel("Epochs")
+                plt.ylabel("mAP")
+                plt.title("Mean Average Precision")
+                plt.savefig("val_mAP.png")
+                plt.close()
+                
 
-            plt.figure()
-            plt.plot(val_mAPs)
-            plt.xlabel("Epochs")
-            plt.ylabel("mAP")
-            plt.title("Mean Average Precision")
-            plt.savefig("val_mAP.png")
-            plt.close()
-            
-
-            plt.figure()
-            plt.plot(val_losses)
-            plt.xlabel("Epochs")
-            plt.ylabel("Loss")
-            plt.title("Validation Loss")
-            plt.savefig("val_losses.png")
-            plt.close()
+                plt.figure()
+                plt.plot(val_losses)
+                plt.xlabel("Epochs")
+                plt.ylabel("Loss")
+                plt.title("Validation Loss")
+                plt.savefig("val_losses.png")
+                plt.close()
 
 
 if __name__ == "__main__":
