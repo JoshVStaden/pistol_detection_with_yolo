@@ -487,6 +487,10 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
     predictions = predictions.to("cpu")
     x_hands = x_hands.to("cpu")
     batch_size = predictions.shape[0]
+    if predictions.size()[1] == 6:
+        # print(predictions.size())
+        predictions = torch.cat((predictions[...,:1], predictions[...,2:4], predictions[...,1:2], predictions[...,4:]), axis=-1)
+        # print(predictions.size())
     predictions = predictions.reshape(batch_size, 2, (B * 3))
     
     

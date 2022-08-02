@@ -27,7 +27,7 @@ import time
 # Hyperparameters
 LEARNING_RATE = 1e-5
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 WEIGHT_DECAY = 1e-2
 EPOCHS = 1000
 NUM_WORKERS = 6
