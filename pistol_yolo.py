@@ -18,23 +18,34 @@ List is structured by tuples and lastly int with number of repeats
 """
 
 architecture_config = [
+    "D5",
     (7, 64, 2, 3),
     "M",
     (3, 192, 1, 1),
     "M",
     (1, 128, 1, 0),
+    "D5",
     (3, 256, 1, 1),
+    "D5",
     (1, 256, 1, 0),
+    "D5",
     (3, 512, 1, 1),
     "M",
     [(1, 256, 1, 0), (3, 512, 1, 1), 4],
+    
+    "D5",
     (1, 512, 1, 0),
+    "D5",
     (3, 1024, 1, 1),
     "M",
     [(1, 512, 1, 0), (3, 1024, 1, 1), 2],
+    "D5",
     (3, 1024, 1, 1),
+    "D5",
     (3, 1024, 2, 1),
+    "D5",
     (3, 1024, 1, 1),
+    "D5",
     (3, 1024, 1, 1),
 ]
 
@@ -124,7 +135,7 @@ class Yolov1(nn.Module):
             pred2[...,:1],
             pred1[...,1:],
             pred2[...,1:]), axis=1)
-        return pred 
+        return torch.sigmoid(pred)
 
     def _create_conv_layers(self, architecture):
         layers = []
@@ -140,7 +151,10 @@ class Yolov1(nn.Module):
                 in_channels = x[1]
 
             elif type(x) == str:
-                layers += [nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))]
+                if x[0] == 'D':
+                    layers += [nn.Dropout(int(x[1]) / 10)]
+                else:
+                    layers += [nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))]
 
             elif type(x) == list:
                 conv1 = x[0]
@@ -183,5 +197,6 @@ class Yolov1(nn.Module):
             nn.Linear(50176, 496),
             nn.Dropout(0.5),
             nn.LeakyReLU(0.1),
-            nn.Linear(496, (B * 3)),
+            nn.Linear(496, (B * 3))
+            
         )

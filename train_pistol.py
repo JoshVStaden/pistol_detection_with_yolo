@@ -50,21 +50,22 @@ class Compose(object):
 
 transform = Compose([transforms.Resize((448, 448)),transforms.ToTensor()])
 
-def show_losses(losses, filename="losses.png"):
-    plt.figure()
-    box = []
-    classes = []
-    for l in losses[-200:]:
-        b, c = l
-        box.append(b.item())
-        # obj.append(o.item())
-        # noobj.append(n.item())
-        classes.append(c.item())
-    plt.plot(box, label="Box Loss")
-    plt.plot(classes, label="Class Loss")
-    plt.legend(loc="best")
-    plt.savefig(filename)
-    plt.close()
+# def show_losses(losses, filename="losses.png"):
+#     plt.figure()
+#     box = []
+#     obj = []
+#     noobj = []
+#     for l in losses[-200:]:
+#         b, c = l
+#         box.append(b.item())
+#         obj.append(o.item())
+#         noobj.append(n.item())
+#         # classes.append(c.item())
+#     plt.plot(box, label="Box Loss")
+#     plt.plot(classes, label="Class Loss")
+#     plt.legend(loc="best")
+#     plt.savefig(filename)
+#     plt.close()
 
 
 
@@ -87,12 +88,13 @@ def train_fn(train_loader, model, optimizer, loss_fn, validation_set=None):
         loss.backward()
         optimizer.step()
 
-        b,  c = losses
+        b, o, n = losses
+        # if batch_idx % 20 == 1:
+        #     show_losses(displ)
 
-        if batch_idx % 20 == 1:
-            show_losses(displ)
+        b, o, n = round(b.item(), 4), round(o.item(), 4), round(n.item(), 4)
 
-        loop.set_postfix(loss=loss.item(), box=b.item(), class_loss=c.item())
+        loop.set_postfix(loss=round(loss.item(), 4), box=b, obj_loss=o, noobj_loss=n)
 
     if validation_set is not None:
         val_loop = tqdm(validation_set, leave=True)
@@ -106,9 +108,10 @@ def train_fn(train_loader, model, optimizer, loss_fn, validation_set=None):
             val_loss.append(loss.item())
             displ.append(losses)
             
-            b,  c = losses
+            b, o, n = losses
+            b, o, n = round(b.item(), 4), round(o.item(), 4), round(n.item(), 4)
 
-            loop.set_postfix(loss=loss.item(), val_box=b.item(), val_class_loss=c.item())
+            loop.set_postfix(loss=round(loss.item(), 4), box=b, obj_loss=o, noobj_loss=n)
         
         print(f"Validation loss was {sum(val_loss) / len(val_loss)}")
         print(f"Mean loss was {sum(mean_loss) / len(mean_loss)}")
@@ -162,6 +165,7 @@ def main():
     val_mAPs = []
 
     for epoch in range(EPOCHS):
+        print(f"Epoch {epoch + 1}:")
         pred_boxes, target_boxes = get_bboxes(
             train_loader, model, iou_threshold=0.5, threshold=0.4
         )

@@ -1,3 +1,4 @@
+from functools import total_ordering
 import torch
 import torch.nn as nn
 from utils import intersection_over_union
@@ -165,6 +166,44 @@ class YoloLoss(nn.Module):
 
     #     return loss, losses
 
+    def loss_one_hand(self, predictions, target):
+        lambda_coord = 5
+        lambda_noobj = 0.5
+
+        w_pred = predictions[...,1]
+        w_target = target[...,1]
+        
+        h_pred = predictions[...,2]
+        h_target = target[...,2]
+        
+        c_pred = predictions[...,0]
+        c_target = target[...,0]
+
+        obj_1 = c_target == 1
+        noobj_1 = c_target == 0
+
+        size_loss = lambda_coord * ((torch.sqrt(w_target[obj_1]) - torch.sqrt(w_pred[obj_1]) )** 2 + 
+                                    (torch.sqrt(h_target[obj_1]) - torch.sqrt(h_pred[obj_1]) )** 2)
+
+        # print(size_loss)
+        # print(torch.sqrt(w_target[obj_1]) - torch.sqrt(w_pred[obj_1]) ** 2)
+        # print(torch.sqrt(h_target[obj_1]) - torch.sqrt(h_pred[obj_1]) ** 2)
+        # quit()
+        obj_loss = (1 - c_pred[obj_1]) ** 2
+        noobj_loss = (0 - c_pred[noobj_1]) ** 2
+        noobj_loss *= lambda_noobj
+
+        size_loss = torch.sum(size_loss)
+        obj_loss = torch.sum(obj_loss)
+        noobj_loss = torch.sum(noobj_loss)
+
+        # print(size_loss, obj_loss, noobj_loss)
+        # quit()
+
+        return [size_loss, obj_loss, noobj_loss]
+        
+
+
     def forward(self, predictions, target):
         """
         Defaults:
@@ -189,12 +228,12 @@ class YoloLoss(nn.Module):
 
         left_pred = predictions[...,:3]
         right_pred = predictions[...,3:]
+        left_losses = self.loss_one_hand(left_pred, left_target)
+        right_losses = self.loss_one_hand(right_pred, right_target)
         # print(predictions.size())
         # quit()
-        loss = MSELoss()
-        # print(left_target.size(), left_pred.size())
-        # quit()
-        b = loss(left_target[...,1:], left_pred[...,1:]) + loss(right_target[...,1:], right_pred[...,1:])
-        c = loss(left_target[...,0], left_pred[...,0]) + loss(right_target[...,0], right_pred[...,0])
-        
-        return b + c, (b,  c)
+        total_losses = []
+
+        for l, r in zip(left_losses, right_losses):
+            total_losses.append(l + r)
+        return sum(total_losses), total_losses
