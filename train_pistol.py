@@ -165,6 +165,8 @@ def main():
     val_mAPs = []
 
     for epoch in range(EPOCHS):
+        print("----------------------------------------------")
+        print("----------------------------------------------")
         print(f"Epoch {epoch + 1}:")
         pred_boxes, target_boxes = get_bboxes(
             train_loader, model, iou_threshold=0.5, threshold=0.4
