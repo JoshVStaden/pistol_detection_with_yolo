@@ -28,7 +28,7 @@ import time
 LEARNING_RATE = 1e-5
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 16
-WEIGHT_DECAY = 1e-2
+WEIGHT_DECAY = 10
 EPOCHS = 1000
 NUM_WORKERS = 6
 PIN_MEMORY = True
@@ -37,7 +37,7 @@ LOAD_MODEL_FILE = "overfit.pth.tar"
 VAL_MODEL_FILE = "validated.pth.tar"
 IMG_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/modified/"
-VALIDATE=False
+VALIDATE=True
 
 class Compose(object):
     def __init__(self,transforms):
@@ -189,7 +189,7 @@ def main():
         if VALIDATE:
             
             val_boxes, _ = get_bboxes(
-                test_loader, model, iou_threshold=0.5, threshold=0.4
+                test_loader, model, iou_threshold=0.5, threshold=0.4, validation=True
             )
             mean_avg_prec_val = mean_average_precision(val_boxes, target_boxes, iou_threshold=0.5, box_format="corners")
         

@@ -258,9 +258,9 @@ def mean_average_precision(
     #     quit()
     return sum(average_precisions) / len(average_precisions)
 
-def plot_image(image, boxes, filename="image.png"):
+def plot_image(image, boxes, filename="image.png", validation=False):
     """Plots predicted bounding boxes on the image"""
-    base_dir = "examples/"
+    base_dir = "val_examples/" if validation else "examples/"
     im = np.array(image)
     height, width, _ = im.shape
 
@@ -353,6 +353,7 @@ def get_bboxes(
     pred_format="cells",
     box_format="midpoint",
     device=DEVICE,
+    validation=False,
 ):
     # loop = tqdm(loader, leave=True)
     all_pred_boxes = []
@@ -388,8 +389,8 @@ def get_bboxes(
 
 
             if batch_idx == 0 and idx <= 4:
-               plot_image(x[idx].permute(1,2,0).to("cpu"), true_bboxes[idx, ...], filename=f"label_{idx}.png")
-               plot_image(x[idx].permute(1,2,0).to("cpu"), nms_boxes, filename=f"prediction_{idx}.png")
+               plot_image(x[idx].permute(1,2,0).to("cpu"), true_bboxes[idx, ...], filename=f"label_{idx}.png", validation=validation)
+               plot_image(x[idx].permute(1,2,0).to("cpu"), nms_boxes, filename=f"prediction_{idx}.png", validation=validation)
 
             nms_boxes = nms_boxes.tolist()
 

@@ -18,13 +18,13 @@ List is structured by tuples and lastly int with number of repeats
 """
 
 architecture_config = [
-    "D5",
+    # "D5",
     (7, 64, 2, 3),
     "M",
     (3, 192, 1, 1),
     "M",
     (1, 128, 1, 0),
-    "D5",    
+    # "D5",    
     (3, 256, 1, 1),
     
     (1, 256, 1, 0),
