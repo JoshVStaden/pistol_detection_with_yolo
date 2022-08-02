@@ -168,7 +168,7 @@ class YoloLoss(nn.Module):
 
     def loss_one_hand(self, predictions, target):
         lambda_coord = 5
-        lambda_noobj = 1#0.5
+        lambda_noobj = 0.5
 
         w_pred = predictions[...,1]
         w_target = target[...,1]
