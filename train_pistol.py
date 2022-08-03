@@ -37,7 +37,7 @@ LOAD_MODEL_FILE = "overfit.pth.tar"
 VAL_MODEL_FILE = "validated.pth.tar"
 IMG_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/modified/"
-VALIDATE=True
+VALIDATE=False
 
 class Compose(object):
     def __init__(self,transforms):

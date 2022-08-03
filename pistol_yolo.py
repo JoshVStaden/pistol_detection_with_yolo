@@ -66,7 +66,8 @@ class Yolov1(nn.Module):
         super(Yolov1, self).__init__()
         self.architecture = architecture_config
         self.in_channels = in_channels
-        self.darknet = self._create_conv_layers(self.architecture)
+        self.left_darknet = self._create_conv_layers(self.architecture)
+        self.right_darknet = self._create_conv_layers(self.architecture)
         self.fcs = self._create_fcs(**kwargs)
 
     def _center_image(self, image, center):
@@ -117,11 +118,11 @@ class Yolov1(nn.Module):
         l_pos, r_pos = x_pos[...,:2], x_pos[...,2:]
         l = self._center_image(x, l_pos)
         r = self._center_image(x, r_pos)
-        x1 = self.darknet(l)
+        x1 = self.left_darknet(l)
         pred1 = self.fcs(torch.flatten(x1, start_dim=1)) 
 
         
-        x2 = self.darknet(r)
+        x2 = self.right_darknet(r)
         pred2 = self.fcs(torch.flatten(x2, start_dim=1)) 
 
         pred = torch.cat((
