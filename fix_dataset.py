@@ -1,4 +1,4 @@
-# from turtle import left
+
 import cv2
 # from xml.dom import minidom
 import xml.etree.ElementTree as ET
@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 IMG_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 OUTPUT_LABEL_DIR = LABEL_DIR + "modified/"
-ds_file = "CCTV/test_copy.txt"
+ds_file = "CCTV/train_copy.txt"
 
 def write_to_xml(xml_filename, filename, img_size, data):
     width, height, _ = img_size
@@ -160,6 +160,11 @@ def mouse_handler(event, x, y, flags, data):
 image_file_locations = []
 label_file_locations = []
 files = None
+left_hands = 0
+left_boxes = 0
+
+right_hands = 0
+right_boxes = 0
 with open(ds_file, 'r') as f:
     files = f.readlines()
     for ff in files:
@@ -184,12 +189,25 @@ for im, la in zip(image_file_locations, label_file_locations):
     cv2.waitKey(0)
     print(hand_coords)
     curr_entry = files.pop(0)
+    if len(hand_coords['left']) > 0:
+        left_hands += 1
+        left_boxes += 1 if len(hand_coords['left']) > 2 else 0
+    if len(hand_coords['right']) > 0:
+        right_hands += 1
+        right_boxes += 1 if len(hand_coords['right']) > 2 else 0
+
+
     if len(hand_coords["left"]) > 0 or len(hand_coords["right"]) > 0:
         write_to_xml(la, im, img.shape, hand_coords)
         with open(ds_file + "_modified.txt" , 'a') as f:
             f.write(curr_entry)
     with open(ds_file, 'w') as f:
         f.write("".join(files))
+    with open(ds_file + "_stats.txt", 'w') as f:
+        out_str = f"left_hands: {left_hands}\nright_hands: {right_hands}\n\n"
+        out_str += f"left_boxes: {left_boxes}\nright_boxes: {right_boxes}"
+        f.write(out_str)
+
 print("Done!")
 cv2.destroyAllWindows()
 

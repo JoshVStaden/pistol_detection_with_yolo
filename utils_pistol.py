@@ -388,7 +388,7 @@ def get_bboxes(
             nms_boxes = bboxes[idx]
 
 
-            if True:# batch_idx == 0 and idx <= 4:
+            if im_no <= 100:# batch_idx == 0 and idx <= 4:
                plot_image(x[idx].permute(1,2,0).to("cpu"), true_bboxes[idx, ...], filename=f"label_{im_no}.png", validation=validation)
                plot_image(x[idx].permute(1,2,0).to("cpu"), nms_boxes, filename=f"prediction_{im_no}.png", validation=validation)
                im_no += 1
