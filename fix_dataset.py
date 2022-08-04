@@ -1,5 +1,6 @@
 
 import cv2
+import os
 # from xml.dom import minidom
 import xml.etree.ElementTree as ET
 
@@ -8,11 +9,7 @@ LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 OUTPUT_LABEL_DIR = LABEL_DIR + "modified/"
 ds_file = "CCTV/valid_copy.txt"
 
-with open(ds_file + "_stats.txt", 'w') as f:
-    stats = f.read().strip()
-    print(stats)
 
-quit()
 def write_to_xml(xml_filename, filename, img_size, data):
     width, height, _ = img_size
     xml = ET.Element("annotation")
@@ -170,6 +167,23 @@ left_boxes = 0
 
 right_hands = 0
 right_boxes = 0
+if os.path.exists(ds_file + "_stats.txt"):
+    with open(ds_file + "_stats.txt", 'r') as f:
+        stats = f.read().strip()
+        stats = stats.split("\n")
+        for s in stats:
+            if s == '':
+                continue
+            name, amt = s.split(': ')
+            if name == 'left_hands':
+                left_hands = int(amt)
+            elif name == 'left_boxes':
+                left_boxes = int(amt)
+            elif name == 'right_hands':
+                right_hands = int(amt)
+            elif name == 'right_boxes':
+                right_boxes = int(amt)
+
 with open(ds_file, 'r') as f:
     files = f.readlines()
     for ff in files:
