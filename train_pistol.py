@@ -28,7 +28,7 @@ import time
 LEARNING_RATE = 1e-5
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 16
-WEIGHT_DECAY = 10
+WEIGHT_DECAY = 1e-6
 EPOCHS = 1000
 NUM_WORKERS = 6
 PIN_MEMORY = True
@@ -37,7 +37,7 @@ LOAD_MODEL_FILE = "overfit.pth.tar"
 VAL_MODEL_FILE = "validated.pth.tar"
 IMG_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/modified/"
-VALIDATE=False
+VALIDATE=True
 
 class Compose(object):
     def __init__(self,transforms):
@@ -116,7 +116,7 @@ def train_fn(train_loader, model, optimizer, loss_fn, validation_set=None):
             b, o, n = losses
             b, o, n = round(b.item(), 4), round(o.item(), 4), round(n.item(), 4)
 
-            loop.set_postfix(loss=round(loss.item(), 4), box=b, obj_loss=o, noobj_loss=n)
+            val_loop.set_postfix(loss=round(loss.item(), 4), box=b, obj_loss=o, noobj_loss=n)
         
         print(f"Validation loss was {sum(val_loss) / len(val_loss)}")
         print(f"Mean loss was {sum(mean_loss) / len(mean_loss)}")
@@ -191,10 +191,10 @@ def main():
         mean_avg_prec = mean_average_precision(pred_boxes, target_boxes, iou_threshold=0.5, box_format="corners")
         if VALIDATE:
             
-            val_boxes, _ = get_bboxes(
+            val_pred_boxes, val_target_boxes = get_bboxes(
                 test_loader, model, iou_threshold=0.5, threshold=0.4, validation=True
             )
-            mean_avg_prec_val = mean_average_precision(val_boxes, target_boxes, iou_threshold=0.5, box_format="corners")
+            mean_avg_prec_val = mean_average_precision(val_pred_boxes, val_target_boxes, iou_threshold=0.5, box_format="corners")
         
         print(f"Train mAP: {mean_avg_prec}")
         if VALIDATE:
