@@ -6,8 +6,13 @@ import xml.etree.ElementTree as ET
 IMG_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 OUTPUT_LABEL_DIR = LABEL_DIR + "modified/"
-ds_file = "CCTV/test_copy.txt"
+ds_file = "CCTV/valid_copy.txt"
 
+with open(ds_file + "_stats.txt", 'w') as f:
+    stats = f.read().strip()
+    print(stats)
+
+quit()
 def write_to_xml(xml_filename, filename, img_size, data):
     width, height, _ = img_size
     xml = ET.Element("annotation")
