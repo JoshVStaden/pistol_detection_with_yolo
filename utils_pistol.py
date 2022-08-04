@@ -258,7 +258,55 @@ def mean_average_precision(
     #     quit()
     return sum(average_precisions) / len(average_precisions)
 
-def plot_image(image, boxes, filename="image.png", validation=False):
+def _rectangles(boxes, ax, width, height, is_true_box=False):
+    line_style = '--' if is_true_box else '-'
+    curr_box = boxes
+        
+    has_left_gun = curr_box[0] == 1
+    has_right_gun = curr_box[1] == 1
+    if has_left_gun:
+            
+        box = curr_box[[4, 5, 8, 9]]
+        assert len(box) == 4, "Got more values than in x, y, w, h, in a box!"
+        boxwidth = box[2] - box[0]
+        boxheight = box[3] - box[1]
+
+        upper_left_x = box[0] 
+        upper_left_y = box[1]
+        rect = patches.Rectangle(
+            (upper_left_x * width, upper_left_y * height),
+            boxwidth * width,
+            boxheight * height,
+            linewidth=1,
+            edgecolor="g",
+            facecolor="none",
+            ls=line_style
+        )
+        # Add the patch to the Axes
+        ax.add_patch(rect)
+    if has_right_gun:
+            
+        box = curr_box[[6, 7, 10, 11]]
+        assert len(box) == 4, "Got more values than in x, y, w, h, in a box!"
+        boxwidth = box[2] - box[0]
+        boxheight = box[3] - box[1]
+
+        upper_left_x = box[0] 
+        upper_left_y = box[1]
+        rect = patches.Rectangle(
+            (upper_left_x * width, upper_left_y * height),
+            boxwidth * width,
+            boxheight * height,
+            linewidth=1,
+            edgecolor="r",
+            facecolor="none",
+            ls=line_style
+        )
+        # Add the patch to the Axes
+        ax.add_patch(rect)
+
+
+def plot_image(image, boxes, filename="image.png", validation=False, true_boxes=None):
     """Plots predicted bounding boxes on the image"""
     base_dir = "val_examples/" if validation else "examples/"
     im = np.array(image)
@@ -268,56 +316,18 @@ def plot_image(image, boxes, filename="image.png", validation=False):
     fig, ax = plt.subplots(1)
     # Display the image
     ax.imshow(im)
+    _rectangles(boxes, ax, width, height)
+    if true_boxes is not None:
+        _rectangles(true_boxes, ax, width, height, is_true_box=True)
+
 
     # box[0] is x midpoint, box[2] is width
     # box[1] is y midpoint, box[3] is height
 
     # Create a Rectangle potch
     boxes = boxes.numpy()
-    for i in range(1):
         
-        curr_box = boxes
         
-        has_left_gun = curr_box[0] == 1
-        has_right_gun = curr_box[1] == 1
-        if has_left_gun:
-                
-            box = curr_box[[4, 5, 8, 9]]
-            assert len(box) == 4, "Got more values than in x, y, w, h, in a box!"
-            boxwidth = box[2] - box[0]
-            boxheight = box[3] - box[1]
-
-            upper_left_x = box[0] 
-            upper_left_y = box[1]
-            rect = patches.Rectangle(
-                (upper_left_x * width, upper_left_y * height),
-                boxwidth * width,
-                boxheight * height,
-                linewidth=1,
-                edgecolor="g",
-                facecolor="none",
-            )
-            # Add the patch to the Axes
-            ax.add_patch(rect)
-        if has_right_gun:
-                
-            box = curr_box[[6, 7, 10, 11]]
-            assert len(box) == 4, "Got more values than in x, y, w, h, in a box!"
-            boxwidth = box[2] - box[0]
-            boxheight = box[3] - box[1]
-
-            upper_left_x = box[0] 
-            upper_left_y = box[1]
-            rect = patches.Rectangle(
-                (upper_left_x * width, upper_left_y * height),
-                boxwidth * width,
-                boxheight * height,
-                linewidth=1,
-                edgecolor="r",
-                facecolor="none",
-            )
-            # Add the patch to the Axes
-            ax.add_patch(rect)
 
     plt.savefig(base_dir + filename)
     plt.close()
@@ -388,9 +398,9 @@ def get_bboxes(
             nms_boxes = bboxes[idx]
 
 
-            if im_no <= 100:# batch_idx == 0 and idx <= 4:
+            if im_no <= 25:# batch_idx == 0 and idx <= 4:
                plot_image(x[idx].permute(1,2,0).to("cpu"), true_bboxes[idx, ...], filename=f"label_{im_no}.png", validation=validation)
-               plot_image(x[idx].permute(1,2,0).to("cpu"), nms_boxes, filename=f"prediction_{im_no}.png", validation=validation)
+               plot_image(x[idx].permute(1,2,0).to("cpu"), nms_boxes, filename=f"prediction_{im_no}.png", validation=validation, true_boxes=true_bboxes[idx,...])
                im_no += 1
 
             nms_boxes = nms_boxes.tolist()

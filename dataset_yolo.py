@@ -19,7 +19,9 @@ class PistolDataset(torch.utils.data.Dataset):
     ):
         csv_file = csv_file + "_modified.txt"
         self.cached_file = csv_file.split(".")[0] +"_cached.pt"
-        self.annotations = open(csv_file).read().split("\n").remove("")
+        self.annotations = open(csv_file).read().split("\n")
+        if "" in self.annotations:
+            self.annotations.remove("")
         self.img_dir = img_dir
         self.label_dir = label_dir
         self.transform = transform
