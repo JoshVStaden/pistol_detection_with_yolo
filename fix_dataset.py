@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 IMG_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/"
 OUTPUT_LABEL_DIR = LABEL_DIR + "modified/"
-ds_file = "CCTV/train_copy.txt"
+ds_file = "CCTV/test_copy.txt"
 
 def write_to_xml(xml_filename, filename, img_size, data):
     width, height, _ = img_size

@@ -1,0 +1,5 @@
+left_hands: 150
+right_hands: 172
+
+left_boxes: 118
+right_boxes: 149
