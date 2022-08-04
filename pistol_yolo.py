@@ -83,7 +83,10 @@ class Yolov1(nn.Module):
         y_shift = torch.sub(img_center_0, center[...,0], alpha=img_shape_0).type(torch.long)
         
         mod_im = torch.zeros(image.size(), device= DEVICE)
+
         for b in range(batch_size):
+            if x_shift[b] == 0 and y_shift[b] == 0:
+                continue
             mod_im[b, ...] = affine(
                 image[b,...], 0,
                 [-x_shift[b], -y_shift[b]], 1, 0
