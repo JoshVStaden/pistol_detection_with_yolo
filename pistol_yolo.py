@@ -172,7 +172,8 @@ class Yolov1(nn.Module):
                 layers += [
                     CNNBlock(
                         in_channels, x[1], kernel_size=x[0], stride=x[2], padding=x[3],
-                    )
+                    ),
+                    nn.ReLU()
                 ]
                 in_channels = x[1]
 
