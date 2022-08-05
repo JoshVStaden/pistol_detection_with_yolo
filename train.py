@@ -44,7 +44,7 @@ class Compose(object):
             img, bboxes = t(img), bboxes
         return img, bboxes
 
-transform = Compose([transforms.Resize((448, 448)),transforms.ToTensor()])
+transform = Compose([transforms.Resize((224, 224)),transforms.ToTensor()])
 
 def train_fn(train_loader, model, optimizer, loss_fn):
     loop = tqdm(train_loader, leave=True)

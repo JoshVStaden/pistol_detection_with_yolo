@@ -221,7 +221,7 @@ class Yolov1(nn.Module):
 
         return nn.Sequential(
             nn.Flatten(),
-            nn.Linear(100352, 4096),
+            nn.Linear(25088, 4096),
             nn.Dropout(0.85),
             nn.Linear(4096, 4096),
             nn.Dropout(0.85),

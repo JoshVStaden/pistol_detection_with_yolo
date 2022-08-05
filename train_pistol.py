@@ -18,6 +18,7 @@ from utils_pistol import (
     save_checkpoint,
     load_checkpoint
 )
+from augmentations import aug_transforms
 from loss_pistols import YoloLoss
 import time
 
@@ -27,7 +28,7 @@ import time
 # Hyperparameters
 LEARNING_RATE = 1e-5
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 WEIGHT_DECAY = 1e-6
 EPOCHS = 1000
 NUM_WORKERS = 6
@@ -40,8 +41,9 @@ LABEL_DIR = "../../Datasets/Guns_In_CCTV/VOC/modified/"
 VALIDATE=True
 
 class Compose(object):
-    def __init__(self,transforms):
+    def __init__(self,transforms, img_size):
         self.transforms = transforms
+        self.img_size = img_size
 
     def __call__(self, img, bboxes):
         img, anchor = img
@@ -49,7 +51,7 @@ class Compose(object):
             img, bboxes = t(img), bboxes
         return (img, anchor), bboxes
 
-transform = Compose([transforms.Resize((448, 448)),transforms.ToTensor()])
+transform = Compose([transforms.Resize((224, 224)),transforms.ToTensor()], 224)
 
 # def show_losses(losses, filename="losses.png"):
 #     plt.figure()
@@ -79,6 +81,8 @@ def train_fn(train_loader, model, optimizer, loss_fn, validation_set=None):
     displ = []
     val_loss = []
     lambda_coord = 0
+
+    
 
     for batch_idx, ((x,x_pos), y) in enumerate(loop):
         x, y = (x.to(DEVICE), x_pos.to(DEVICE)), y.to(DEVICE)
@@ -134,12 +138,13 @@ def main():
 
     if LOAD_MODEL:
         load_checkpoint(torch.load(LOAD_MODEL_FILE), model, optimizer)
-
+    
     train_dataset = PistolDataset(
         "CCTV/train_copy.txt",
         transform=transform,
         img_dir=IMG_DIR + "train/",
-        label_dir=LABEL_DIR
+        label_dir=LABEL_DIR,
+        augmentations=aug_transforms,
     )
     train_loader = DataLoader(
         dataset=train_dataset,

@@ -508,7 +508,7 @@ def convert_cellboxes(predictions, S=1, C=1, B=1, x_hands=None):
     
 
     bboxes_w = torch.cat((predictions[..., 0, 1:], predictions[..., 1, 1:]), dim=-1) / 2
-    bboxes = x_hands[:,0,:]
+    bboxes = x_hands[:,:]
     
     
     

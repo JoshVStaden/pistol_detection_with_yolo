@@ -15,7 +15,7 @@ import numpy as np
 
 class PistolDataset(torch.utils.data.Dataset):
     def __init__(
-        self, csv_file, img_dir, label_dir, S=1, B=1, C=1, transform=None, max_samples = 1500
+        self, csv_file, img_dir, label_dir, S=1, B=1, C=1, transform=None, max_samples = 1500, augmentations = []
     ):
         csv_file = csv_file + "_modified.txt"
         self.cached_file = csv_file.split(".")[0] +"_cached.pt"
@@ -29,6 +29,7 @@ class PistolDataset(torch.utils.data.Dataset):
         self.B = B
         self.C = C
         self.max_samples = max_samples
+        self.augmentations = augmentations
 
         if os.path.exists(self.cached_file):
             self.cached_entries = torch.load(self.cached_file)
@@ -49,10 +50,24 @@ class PistolDataset(torch.utils.data.Dataset):
         for i, _ in enumerate(loop):
             if i == self.max_samples: 
                 break
-            ret.append(self.load_item(i))
+            ret += self.load_item(i)
             loop.set_postfix(loaded=i, total=len(self.annotations))
         # ret = ret
+        # print(ret[0])
+        # quit()
         torch.save(ret,self.cached_file)
+        return ret
+
+
+    def apply_augmentations(self, image, annotation):
+        # images = [image]
+        # annotations = [annotation]
+        ret = [(image, annotation)]
+        for a in self.augmentations:
+            im_tr, la_tr = a
+            # images.append((im_tr(image)))
+            # annotations.append(la_tr(annotation))
+            ret.append((im_tr(image), la_tr(annotation)))
         return ret
 
 
@@ -158,7 +173,7 @@ class PistolDataset(torch.utils.data.Dataset):
             #     hand_arr = (lhand_arr, [0,0])
             # elif has_rhand:
             #     hand_arr = ([0,0], rhand_arr)
-            hands.append(hand_arr)
+            hands = hand_arr
             boxes.append(curr_data)
         
         boxes = torch.tensor(boxes)
@@ -230,5 +245,6 @@ class PistolDataset(torch.utils.data.Dataset):
                     label_matrix[ i, 1:3] = box_coordinates
 
                     # Set one hot encoding for class_label
-        return image, label_matrix
+        ret = self.apply_augmentations(image, label_matrix)
+        return ret
 
