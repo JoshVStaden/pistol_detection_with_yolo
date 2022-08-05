@@ -18,7 +18,7 @@ List is structured by tuples and lastly int with number of repeats
 """
 
 architecture_config = [
-    "D1",
+    # "D2",
     (7, 64, 2, 3),
     "M",
     (3, 192, 1, 1),
@@ -28,12 +28,12 @@ architecture_config = [
     (3, 256, 1, 1),
     
     (1, 256, 1, 0),
-    "D3",
+    "D2",
     (3, 512, 1, 1),
     "M",
     [(1, 256, 1, 0), (3, 512, 1, 1), 4],
     
-    "D4",
+    "D2",
     (1, 512, 1, 0),
     
     (3, 1024, 1, 1),
@@ -41,12 +41,17 @@ architecture_config = [
     [(1, 512, 1, 0), (3, 1024, 1, 1), 2],
     
     (3, 1024, 1, 1),
-    "D5",
+    # "D5",
     (3, 1024, 2, 1),
     
     (3, 1024, 1, 1),
     
     (3, 1024, 1, 1),
+    (3, 1024, 2, 2),
+    (3, 1024, 2, 2),
+    (3, 1024, 3, 3),
+    (2, 1024, 9, 1),
+    # (3, 1024, 2, 2),
 ]
 
 
@@ -189,10 +194,11 @@ class Yolov1(nn.Module):
         # nn.Linear(1024*S*S, 4096),
         # nn.LeakyReLU(0.1),
         # nn.Linear(4096, S*S*(B*5+C))
+        # last_layer = architecture_config[-1]
 
         return nn.Sequential(
             nn.Flatten(),
-            nn.Linear(50176, 4096),
+            nn.Linear(1024, 4096),
             nn.Dropout(0.2),
             nn.LeakyReLU(0.1),
             nn.Linear(4096, (B * 3))
