@@ -26,7 +26,7 @@ import time
 # torch.manual_seed(seed)
 
 # Hyperparameters
-LEARNING_RATE = 1e-6
+LEARNING_RATE = 2e-7
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 16
 WEIGHT_DECAY = 0
